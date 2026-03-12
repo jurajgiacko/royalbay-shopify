@@ -1722,6 +1722,131 @@ function renderShopifySetup() {
         </div>
       </div>
 
+      <!-- Related & Alternative products -->
+      <div class="info-panel" style="margin-top:12px;border-color:var(--accent2)">
+        <h3 style="color:var(--accent2);margin-bottom:10px">Suvisiace & Alternativne produkty</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--accent2)">Suvisiace produkty <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(cross-sell)</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+              "Tento produkt sa hodi s..." — <b>doplnkove produkty ineho typu</b>, ktore zakaznik kúpi navyše.
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+              <b>Shopify riesenie:</b> Metafield <code>custom.related_products</code> (typ: list.product_reference)
+            </div>
+            <div style="margin-top:10px;font-size:11px">
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent2)">
+                <b>Podkolenky Energy</b> → NRG ponozky, Ortho kolenni bandaz
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent2)">
+                <b>Lytkove navleky Extreme</b> → NRG ponozky, Celenka
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent2)">
+                <b>Therapy podkolenky</b> → Ortho kolenni/kotnickova bandaz
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;border-left:3px solid var(--accent2)">
+                <b>NRG ponozky</b> → Podkolenky Energy, Lytkove navleky Motion
+              </div>
+            </div>
+            <div style="margin-top:10px;padding:8px;background:rgba(78,205,196,.06);border:1px solid rgba(78,205,196,.15);border-radius:6px;font-size:11px;color:var(--text-muted)">
+              <b>UI na product page:</b> Sekcia "Hodi sa k tomuto produktu" pod hlavnym popisom. 2-3 karty produktov s "Pridat do kosika".
+            </div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--accent)">Alternativne produkty <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(upsell)</span></div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+              "Mohlo by vas zaujimať aj..." — <b>podobne produkty rovnakeho typu</b>, ktore zakaznik zvazi namiesto.
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+              <b>Shopify riesenie:</b> Metafield <code>custom.complementary_products</code> (typ: list.product_reference)
+            </div>
+            <div style="margin-top:10px;font-size:11px">
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent)">
+                <b>Energy podkolenky</b> ↔ Air podkolenky, Merino podkolenky
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent)">
+                <b>Therapy</b> ↔ Therapy Premium, Relax
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;margin-bottom:4px;border-left:3px solid var(--accent)">
+                <b>Motion lytkove</b> ↔ Extreme lytkove, Extreme Race
+              </div>
+              <div style="padding:6px 8px;background:var(--bg);border-radius:4px;border-left:3px solid var(--accent)">
+                <b>NRG No-show</b> ↔ NRG Low-cut, Air No-show
+              </div>
+            </div>
+            <div style="margin-top:10px;padding:8px;background:rgba(108,140,255,.06);border:1px solid rgba(108,140,255,.15);border-radius:6px;font-size:11px;color:var(--text-muted)">
+              <b>UI na product page:</b> Sekcia "Porovnajte alternativy" alebo "Tiez by sa vam mohlo hodit". Moznost zobrazit mini-porovnavaciu tabulku (komprese, material, cena).
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;padding:10px;background:rgba(78,205,196,.06);border:1px solid rgba(78,205,196,.15);border-radius:6px;color:var(--text-muted)">
+          <b style="color:var(--accent2)">Logika priradenia:</b>
+          Suvisiace = iny typ produktu, rovnaka aktivita (podkolenky → ponozky pre bezca).
+          Alternativne = rovnaky typ, ina rada (Energy podkolenky → Air podkolenky).
+          Shopify Search & Discovery app (zadarmo) toto podporuje nativne — alebo cez metafields.
+        </div>
+      </div>
+
+      <!-- Gender strategy -->
+      <div class="info-panel" style="margin-top:12px;border-color:var(--pink)">
+        <h3 style="color:var(--pink);margin-bottom:10px">Muzi / Zeny — Gender stratégia</h3>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div style="background:var(--surface2);border:2px solid var(--green);border-radius:8px;padding:14px">
+            <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:6px">DOPORUCENIE: Unisex + farebne varianty</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Royal Bay produkty su <b>unisex</b> — rovnaky strih a kompresna trieda pre muze aj zeny.
+              Rozdiel je len vo <b>farebnych preferenciach</b>.
+              <ul style="margin-top:6px">
+                <li><b>Netreba</b> separate produkty "pre muzov" / "pre zeny"</li>
+                <li>Farby hovoria za seba — Cierna/Modra vs Ruzova/Mint</li>
+                <li>Velikostna tabulka je jedna (S-XXL)</li>
+                <li>28 produktov = prehladne. Delenie na gender by zdvojnásobilo katalog zbytocne</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+            <div style="font-size:13px;font-weight:600;color:var(--orange);margin-bottom:6px">ALTERNATIVA: STOX Energy pristup</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              STOX ma separate sekcie "Men" / "Women" s rozdielnymi produktami a strihy.
+              <ul style="margin-top:6px">
+                <li>Davalo by zmysel ak by Royal Bay mal rozne strihy pre M/Z</li>
+                <li>Alebo ak by ste mali 80+ produktov a potrebovali segmentaciu</li>
+                <li><b>Pre Royal Bay s 28 unisex produktami to nie je potrebne</b></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:10px">
+          <b>Co implementovat namiesto gender delenia:</b>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Metafield <code style="font-weight:400">custom.gender</code></div>
+            <div style="font-size:11px;color:var(--text-muted)">Hodnota "Unisex" na vsetkych produktoch. Filter sa zobrazi ale bude mat len 1 hodnotu — tym je jasne ze su unisex.</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">SEO landing pages</div>
+            <div style="font-size:11px;color:var(--text-muted)">Blog clanky: "Kompresni podkolenky pro zeny — jak vybrat" s odkazmi na produky v ruzovych farbách. Chyta longtail keywords bez duplicit v katalogu.</div>
+          </div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:4px">Homepage sekcie</div>
+            <div style="font-size:11px;color:var(--text-muted)">"Pro ni" / "Pro nej" bloky na homepage — filtruju rovnaké produkty, len zobrazuju ine farby ako hlavny obrazok.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;font-size:12px;padding:10px;background:rgba(244,114,182,.06);border:1px solid rgba(244,114,182,.15);border-radius:6px;color:var(--text-muted)">
+          <b style="color:var(--pink)">Zaver:</b> Vsetky produkty su Unisex. Gender netreba riesit na urovni produktov ani kolekcii.
+          Staci farebne varianty (zakaznik si vyberie) + volitelne blog/homepage sekcie pre cielenu komunikaciu.
+        </div>
+      </div>
+
       <!-- Implementation notes below the preview -->
       <div class="info-panel" style="margin-top:12px;border-color:var(--purple)">
         <h3 style="color:var(--purple);margin-bottom:8px">Implementacia pre Mime Digital</h3>
