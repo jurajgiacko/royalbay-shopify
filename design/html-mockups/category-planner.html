@@ -159,6 +159,8 @@
     <button onclick="resetAll()">Reset</button>
     <button class="primary" onclick="exportJSON()">Export JSON</button>
     <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="exportMarkdown()">Export MD</button>
+    <button onclick="downloadAll()" style="background:var(--green);border-color:var(--green);color:#000;font-weight:600">Download All</button>
   </div>
 </header>
 
@@ -1250,6 +1252,109 @@ function exportCSV() {
   document.getElementById('export-area').classList.add('show');
   navigator.clipboard.writeText(csv).catch(()=>{});
 }
+function exportMarkdown() {
+  let md = `# Royal Bay — Shopify Product Catalog\n\nExport: ${new Date().toISOString().split('T')[0]}\n\n`;
+  md += `## Prehled\n\n- **Produkty:** ${PRODUCTS.length}\n- **Farebne varianty:** ${PRODUCTS.reduce((s,p)=>s+(p.params?.colors?.length||0),0)}\n\n`;
+
+  // Categories
+  md += `## Kolekcie (Collections)\n\n`;
+  for (const [k,g] of Object.entries(CATEGORIES)) {
+    md += `### ${g.label}\n\n`;
+    md += `| Kolekcia | Handle | SEO Title | Produkty |\n|---|---|---|---|\n`;
+    g.items.forEach(c => {
+      const n = PRODUCTS.filter(p => p.categories.includes(c.id)).length;
+      md += `| ${c.name} | \`${c.handle}\` | ${c.seoTitle||''} | ${n} |\n`;
+    });
+    md += `\n`;
+  }
+
+  // Products
+  md += `## Produkty\n\n`;
+  PRODUCTS.forEach(p => {
+    const pr = p.params || {};
+    md += `### ${p.shopifyName}\n\n`;
+    md += `- **Rada:** ${getLineName(p.line)}\n`;
+    md += `- **Typ:** ${p.type}\n`;
+    md += `- **Cena:** ${p.price} Kc${p.priceOld ? ` (puvodne ${p.priceOld} Kc)` : ''}\n`;
+    md += `- **SEO Title:** ${p.seoTitle}\n`;
+    md += `- **LLM Description:** ${p.llmDesc}\n`;
+    md += `- **Kolekcie:** ${p.categories.map(getCatName).join(', ')}\n`;
+    if (pr.compression_type) md += `- **Komprese:** ${pr.compression_type} (${pr.compression_class||''})\n`;
+    if (pr.colors?.length) md += `- **Barvy (${pr.colors.length}):** ${pr.colors.join(', ')}\n`;
+    if (pr.sizes?.length) md += `- **Velikosti:** ${pr.sizes.join(', ')}\n`;
+    if (pr.activities?.length) md += `- **Aktivity:** ${pr.activities.join(', ')}\n`;
+    if (pr.features?.length) md += `- **Vlastnosti:** ${pr.features.join(', ')}\n`;
+    if (pr.material) md += `- **Material:** ${pr.material}\n`;
+    md += `\n`;
+  });
+
+  // Filter schema
+  md += `## Parametricke filtre (Shopify Metafields)\n\n`;
+  md += `| Filter | Shopify Key | Typ | Hodnoty |\n|---|---|---|---|\n`;
+  FILTER_SCHEMA.forEach(f => {
+    md += `| ${f.label} | \`${f.shopify}\` | ${f.type} | ${f.values.join(', ')} |\n`;
+  });
+  md += `\n`;
+
+  // Bundles
+  md += `## Bundles & Upsell\n\n`;
+  md += `Bundly sa **nevytvaraju ako samostatne produkty**. Riesenie:\n\n`;
+  md += `1. **Shopify Bundles app** (nativna, zadarmo) — kombinacie produktov so zlavou\n`;
+  md += `2. **Automatic Discounts** — "Kup 2+, usetri X%" pravidla\n`;
+  md += `3. **Cross-sell blok** na product page — "Kupte spolu a usetrite"\n\n`;
+
+  // SEO indexing
+  md += `## SEO Indexovanie\n\n`;
+  md += `| Typ stranky | Indexovanie | Poznamka |\n|---|---|---|\n`;
+  md += `| Hlavne kategorie | INDEX | Unikatny title, H1, popis, canonical |\n`;
+  md += `| Activity kolekcie | INDEX | SEO landing pages s FAQ schema |\n`;
+  md += `| Filtrovane URL | NOINDEX | ?filter.color=... — dynamicke, bez unikatneho contentu |\n`;
+  md += `| Paginacia | NOINDEX | ?page=2+ s rel="next/prev" |\n`;
+  md += `| Variant URL | CANONICAL | ?variant=123 → canonical na hlavny produkt |\n`;
+
+  document.getElementById('export-output').value = md;
+  document.getElementById('export-area').classList.add('show');
+  navigator.clipboard.writeText(md).catch(()=>{});
+}
+
+function downloadFile(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function downloadAll() {
+  // JSON
+  const jsonData = { exportDate:new Date().toISOString(), filterSchema:FILTER_SCHEMA, categories:CATEGORIES,
+    products: PRODUCTS.map(p=>({ id:p.id, originalName:p.name, shopifyName:p.shopifyName,
+      seoTitle:p.seoTitle, llmDescription:p.llmDesc, line:p.line, type:p.type,
+      price:p.price, priceOriginal:p.priceOld, isOutlet:p.isOutlet, isCustom:p.isCustom||false,
+      collections:p.categories, collectionNames:p.categories.map(getCatName), params:p.params }))
+  };
+  downloadFile(JSON.stringify(jsonData,null,2), 'royalbay-shopify-catalog.json', 'application/json');
+
+  // CSV
+  let csv = 'ID,Original,Shopify Name,SEO Title,LLM Description,Line,Type,Price,Collections,Compression,Material,Colors,Sizes,Activities\n';
+  PRODUCTS.forEach(p => { const pr=p.params||{};
+    csv += [p.id,`"${p.name}"`,`"${p.shopifyName}"`,`"${p.seoTitle}"`,`"${p.llmDesc}"`,p.line,p.type,p.price,
+      `"${p.categories.map(getCatName).join('; ')}"`,`"${pr.compression_type||''}"`,`"${pr.material||''}"`,
+      `"${(pr.colors||[]).join(', ')}"`,`"${(pr.sizes||[]).join(', ')}"`,`"${(pr.activities||[]).join(', ')}"`
+    ].join(',')+'\n';
+  });
+  downloadFile(csv, 'royalbay-shopify-products.csv', 'text/csv');
+
+  // Markdown — reuse logic
+  exportMarkdown();
+  const md = document.getElementById('export-output').value;
+  downloadFile(md, 'royalbay-shopify-catalog.md', 'text/markdown');
+
+  document.getElementById('export-area').classList.remove('show');
+  alert('Stiahnuté 3 súbory: JSON, CSV, Markdown');
+}
+
 function resetAll() {
   if (!confirm('Reset all to defaults?')) return;
   localStorage.removeItem('rb-planner-v3');
@@ -1560,6 +1665,63 @@ function renderShopifySetup() {
         </div>
       </div>
 
+      <!-- Bundles & Upsell -->
+      <div class="info-panel" style="margin-top:12px;border-color:var(--yellow)">
+        <h3 style="color:var(--yellow);margin-bottom:10px">Bundles & Upsell — Bez samostatnych produktov</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+          Bundly (vyhodna baleni, sety) sa <b>nevytvaraju ako samostatne produkty</b> v katalógu.
+          Riesenie cez nativne Shopify nastroje:
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:14px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--green)">1. Shopify Bundles App</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Nativna app od Shopify (zadarmo). Vytvoris bundle v admin — vyberies produkty, nastavis zľavu.
+              Inventory sa automaticky odpočítava z jednotlivych poloziek.
+            </div>
+            <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">
+              <div style="color:var(--text-muted)">Priklad:</div>
+              <div style="margin-top:4px"><b>Podkolenky Energy + Ponozky NRG</b></div>
+              <div style="color:var(--green)">Uspora 10% pri kúpe spolu</div>
+            </div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--accent)">2. Automatic Discounts</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Shopify Discounts → Automatic. Pravidla ako "Kúp 2+, ušetri 15%".
+              Aplikuje sa automaticky v košíku bez kupónu.
+            </div>
+            <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">
+              <div style="color:var(--text-muted)">Priklad pravidiel:</div>
+              <div style="margin-top:4px">• 2 pary podkolienok = <b>-10%</b></div>
+              <div>• 3+ produkty z kolekcie = <b>-15%</b></div>
+              <div>• Podkolenky + navleky = <b>-12%</b></div>
+            </div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--purple)">3. Cross-sell na Product Page</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+              Theme blok "Kupte spolu a usetrite" pod produktom. Zakaznik vidi doplnkove produkty s bundle zlavou.
+              Klik = pridanie oboch do kosika.
+            </div>
+            <div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;font-size:11px">
+              <div style="color:var(--text-muted)">Navrhnuté kombinácie:</div>
+              <div style="margin-top:4px">• Podkolenky → ponozky rovnakej rady</div>
+              <div>• Lytkove navleky → ponozky</div>
+              <div>• Therapy → Ortho bandaz</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:12px;padding:10px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:6px;color:var(--text-muted)">
+          <b style="color:var(--yellow)">Pre Mime Digital:</b> Implementovat "Frequently Bought Together" blok na product page.
+          Bundle pravidla sa nastavia v Shopify Admin → Discounts. Žiadne bundle produkty v katalógu — len zľavové pravidlá a cross-sell UI.
+        </div>
+      </div>
+
       <!-- Implementation notes below the preview -->
       <div class="info-panel" style="margin-top:12px;border-color:var(--purple)">
         <h3 style="color:var(--purple);margin-bottom:8px">Implementacia pre Mime Digital</h3>
@@ -1574,7 +1736,8 @@ function renderShopifySetup() {
           &nbsp;&nbsp;Filtre sa zobrazuju presne ako v preview hore. Kazdy filter = 1 Shopify metafield. Barvy ako swatche, velkosti ako buttony, ostatne ako checkboxy.<br><br>
 
           <b>4. Data import:</b><br>
-          &nbsp;&nbsp;Pouzit export z tohto planneru (JSON/CSV) pre hromadny import cez Shopify Matrixify alebo Stock Sync app.
+          &nbsp;&nbsp;Pouzit export z tohto planneru (JSON/CSV/MD) pre hromadny import cez Shopify Matrixify alebo Stock Sync app.
+          Stiahnite vsetky formáty cez tlacidlo <b>"Download All"</b> v headeri.
         </div>
       </div>
     </div>
