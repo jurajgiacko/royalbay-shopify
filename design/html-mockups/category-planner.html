@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Bay — Shopify Category & SEO Planner</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #232733; --border: #2e3344;
+    --text: #e4e6ef; --text-muted: #8b8fa3;
+    --accent: #6c8cff; --accent2: #4ecdc4;
+    --green: #4ade80; --orange: #fb923c; --red: #f87171;
+    --purple: #a78bfa; --pink: #f472b6; --yellow: #fbbf24;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+
+  header { background:var(--surface); border-bottom:1px solid var(--border); padding:14px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  header h1 { font-size:18px; font-weight:600; }
+  header h1 span { color:var(--accent); }
+  .header-actions { display:flex; gap:8px; }
+  .header-actions button { padding:6px 14px; border-radius:6px; border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer; font-size:13px; transition:all .15s; }
+  .header-actions button:hover { border-color:var(--accent); color:var(--accent); }
+  .header-actions button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .stats-bar { background:var(--surface); border-bottom:1px solid var(--border); padding:10px 24px; display:flex; gap:24px; font-size:13px; color:var(--text-muted); }
+  .stats-bar b { color:var(--text); margin-right:4px; }
+
+  .layout { display:grid; grid-template-columns:330px 1fr; height:calc(100vh - 100px); }
+
+  /* Sidebar */
+  .sidebar { background:var(--surface); border-right:1px solid var(--border); overflow-y:auto; padding:16px; }
+  .sidebar h2 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px; }
+  .cat-group { margin-bottom:12px; }
+  .cat-group-title { font-size:11px; text-transform:uppercase; letter-spacing:.8px; color:var(--text-muted); margin-bottom:4px; padding:4px 0; border-bottom:1px solid var(--border); }
+  .cat-item { padding:5px 10px; border-radius:6px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:space-between; transition:background .15s; margin-bottom:1px; user-select:none; }
+  .cat-item:hover { background:var(--surface2); }
+  .cat-item.active { background:var(--accent); color:#fff; }
+  .cat-item .count { background:var(--surface2); padding:1px 7px; border-radius:10px; font-size:11px; color:var(--text-muted); min-width:22px; text-align:center; }
+  .cat-item.active .count { background:rgba(255,255,255,.2); color:#fff; }
+  .cat-icon { margin-right:6px; font-size:13px; }
+  .cat-seo { font-size:10px; color:var(--text-muted); padding:2px 10px 0 28px; display:none; }
+  .cat-item.active + .cat-seo { display:block; }
+
+  .drop-zone { border:2px dashed var(--border); border-radius:8px; padding:10px; margin-top:14px; text-align:center; color:var(--text-muted); font-size:12px; transition:all .2s; }
+  .drop-zone.over { border-color:var(--accent); background:rgba(108,140,255,.1); color:var(--accent); }
+
+  /* Main */
+  .main { overflow-y:auto; padding:20px; }
+
+  .tabs { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab { padding:7px 14px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-muted); cursor:pointer; font-size:13px; transition:all .15s; user-select:none; }
+  .tab:hover { color:var(--text); }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+  .view-controls { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .search-box { flex:1; min-width:200px; padding:8px 12px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:13px; outline:none; }
+  .search-box:focus { border-color:var(--accent); }
+  .filter-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text-muted); cursor:pointer; font-size:12px; transition:all .15s; user-select:none; }
+  .filter-btn:hover, .filter-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(108,140,255,.1); }
+
+  /* Product Cards */
+  .product-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(360px,1fr)); gap:12px; }
+  .product-card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; cursor:grab; transition:all .2s; position:relative; }
+  .product-card:hover { border-color:var(--accent); transform:translateY(-1px); }
+  .product-card.dragging { opacity:.5; }
+  .product-line { display:inline-block; padding:2px 7px; border-radius:4px; font-size:11px; font-weight:600; margin-bottom:4px; margin-right:3px; }
+  .line-energy { background:rgba(108,140,255,.15); color:var(--accent); }
+  .line-air { background:rgba(78,205,196,.15); color:var(--accent2); }
+  .line-extreme { background:rgba(248,113,113,.15); color:var(--red); }
+  .line-extreme-race { background:rgba(251,146,60,.15); color:var(--orange); }
+  .line-therapy { background:rgba(167,139,250,.15); color:var(--purple); }
+  .line-therapy-premium { background:rgba(167,139,250,.25); color:var(--purple); }
+  .line-relax { background:rgba(74,222,128,.15); color:var(--green); }
+  .line-motion { background:rgba(244,114,182,.15); color:var(--pink); }
+  .line-merino { background:rgba(251,191,36,.15); color:var(--yellow); }
+  .line-nrg { background:rgba(251,191,36,.1); color:var(--yellow); }
+  .line-ortho { background:rgba(78,205,196,.2); color:var(--accent2); }
+  .line-accessories { background:rgba(139,143,163,.2); color:var(--text-muted); }
+  .line-bundle { background:rgba(139,143,163,.15); color:var(--text-muted); }
+
+  .product-name { font-size:14px; font-weight:500; margin-bottom:3px; }
+  .product-meta { font-size:12px; color:var(--text-muted); margin-bottom:6px; }
+  .product-price { font-size:13px; margin-bottom:6px; }
+  .product-price .old { text-decoration:line-through; color:var(--text-muted); margin-right:6px; }
+  .product-price .current { color:var(--green); font-weight:600; }
+
+  .product-categories { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+  .product-cat-tag { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:4px; font-size:11px; background:var(--surface2); color:var(--text-muted); border:1px solid var(--border); }
+  .product-cat-tag .remove { cursor:pointer; opacity:.5; font-size:13px; line-height:1; }
+  .product-cat-tag .remove:hover { opacity:1; color:var(--red); }
+
+  .no-category { border-left:3px solid var(--orange); }
+  .has-category { border-left:3px solid var(--green); }
+
+  /* Params */
+  .params-table { width:100%; font-size:11px; border-collapse:collapse; margin-top:6px; }
+  .params-table td { padding:3px 6px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .params-table td:first-child { color:var(--text-muted); white-space:nowrap; width:90px; }
+  .param-tag { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; margin:1px 2px; background:var(--surface2); border:1px solid var(--border); }
+  .param-color { display:inline-flex; align-items:center; gap:4px; padding:1px 6px; border-radius:3px; font-size:10px; margin:1px 2px; background:var(--surface2); border:1px solid var(--border); }
+  .color-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  /* SEO name row */
+  .seo-row { margin-top:5px; padding:4px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:6px; }
+  .seo-shopify { background:rgba(108,140,255,.08); color:var(--accent); }
+  .seo-title { background:rgba(78,205,196,.08); color:var(--accent2); }
+  .seo-llm { background:rgba(167,139,250,.08); color:var(--purple); }
+  .seo-row .label { color:var(--text-muted); font-size:11px; min-width:70px; }
+  .seo-row input { background:transparent; border:none; color:inherit; font-size:12px; flex:1; outline:none; font-family:inherit; }
+  .seo-row input:focus { border-bottom:1px solid currentColor; }
+
+  /* Popup */
+  .assign-popup { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; z-index:200; width:440px; max-height:80vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .assign-popup.show { display:block; }
+  .assign-popup h3 { font-size:15px; margin-bottom:12px; }
+  .cat-checkbox { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:6px; cursor:pointer; font-size:13px; transition:background .15s; }
+  .cat-checkbox:hover { background:var(--surface2); }
+  .cat-checkbox input { accent-color:var(--accent); }
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:150; }
+  .overlay.show { display:block; }
+
+  /* Info panels */
+  .info-panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:16px; }
+  .info-panel h3 { font-size:14px; margin-bottom:8px; }
+  .info-panel ul { font-size:12px; color:var(--text-muted); padding-left:18px; }
+  .info-panel li { margin-bottom:4px; }
+  .info-panel code { background:var(--surface2); padding:1px 5px; border-radius:3px; font-size:11px; }
+  .info-panel .example { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:10px; margin-top:8px; font-size:12px; }
+  .info-panel .good { color:var(--green); }
+  .info-panel .bad { color:var(--red); }
+  .ref-cats { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .ref-cat { padding:3px 9px; border-radius:4px; font-size:12px; background:rgba(78,205,196,.1); color:var(--accent2); border:1px solid rgba(78,205,196,.2); }
+
+  .filter-schema-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-top:10px; }
+  .filter-card { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; }
+  .filter-card h4 { font-size:13px; margin-bottom:4px; }
+  .shopify-key { font-size:10px; color:var(--text-muted); font-weight:400; }
+  .fv { padding:2px 8px; border-radius:3px; font-size:11px; background:var(--bg); color:var(--text-muted); border:1px solid var(--border); display:inline-block; margin:2px; }
+
+  .export-area { display:none; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:16px; }
+  .export-area.show { display:block; }
+  .export-area textarea { width:100%; min-height:300px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:12px; font-family:monospace; font-size:12px; resize:vertical; }
+
+  .collapsible-toggle { cursor:pointer; user-select:none; display:flex; align-items:center; gap:6px; }
+  .collapsible-toggle .arrow { transition:transform .2s; font-size:10px; }
+  .collapsible-toggle.open .arrow { transform:rotate(90deg); }
+  .collapsible-body { display:none; }
+  .collapsible-body.open { display:block; }
+
+  @media (max-width:768px) { .layout { grid-template-columns:1fr; } .sidebar { max-height:300px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Royal Bay <span>Shopify Planner</span></h1>
+  <div class="header-actions">
+    <button onclick="resetAll()">Reset</button>
+    <button class="primary" onclick="exportJSON()">Export JSON</button>
+    <button onclick="exportCSV()">Export CSV</button>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <span><b id="stat-total">0</b> products</span>
+  <span><b id="stat-assigned">0</b> assigned</span>
+  <span><b id="stat-unassigned">0</b> unassigned</span>
+  <span><b id="stat-variants">0</b> color variants</span>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <h2>Shopify Collections</h2>
+    <div id="category-tree"></div>
+    <div class="drop-zone" id="drop-zone">Drop here = unassign all</div>
+  </div>
+
+  <div class="main">
+    <div class="tabs" id="tabs-bar">
+      <div class="tab active" data-tab="all">All Products</div>
+      <div class="tab" data-tab="unassigned">Unassigned</div>
+      <div class="tab" data-tab="tree">Category Tree</div>
+      <div class="tab" data-tab="variants">Variant Strategy</div>
+      <div class="tab" data-tab="filters">Filter Preview</div>
+      <div class="tab" data-tab="seo">SEO & LLM Guide</div>
+    </div>
+
+    <div class="view-controls" id="view-controls">
+      <input type="text" class="search-box" placeholder="Search products..." id="search-input">
+      <button class="filter-btn active" data-line="all">All</button>
+      <button class="filter-btn" data-line="energy">Energy</button>
+      <button class="filter-btn" data-line="air">Air</button>
+      <button class="filter-btn" data-line="extreme">Extreme</button>
+      <button class="filter-btn" data-line="therapy">Therapy</button>
+      <button class="filter-btn" data-line="motion">Motion</button>
+      <button class="filter-btn" data-line="merino">Merino</button>
+      <button class="filter-btn" data-line="nrg">NRG</button>
+      <button class="filter-btn" data-line="ortho">Ortho</button>
+    </div>
+
+    <div class="product-grid" id="product-grid"></div>
+    <div id="tree-view" style="display:none"></div>
+    <div id="filter-preview" style="display:none"></div>
+    <div id="seo-guide" style="display:none"></div>
+    <div id="variants-view" style="display:none"></div>
+    <div class="export-area" id="export-area">
+      <h3 style="margin-bottom:8px">Export</h3>
+      <textarea id="export-output" readonly></textarea>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="assign-popup" id="assign-popup">
+  <h3 id="popup-title">Assign Categories</h3>
+  <div id="popup-categories"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+    <button class="filter-btn" id="popup-close">Done</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const COLOR_MAP = {
+  "Cierna":"#1a1a1a","Modra":"#3b82f6","Cervena":"#ef4444",
+  "Zelena/Lime":"#84cc16","Ruzova":"#ec4899","Tyrkysova":"#06b6d4",
+  "Biela":"#f0f0f0","Mint":"#6ee7b7","Neon pink":"#ff1493",
+  "Veri-peri":"#6667AB","Olivova":"#808000",
+  "Neon ruzova":"#ff1493","Lososova":"#FA8072","Modra neon":"#4d94ff",
+  "Seda":"#9ca3af","Limetka":"#a3e635",
+  "Ruzova neon":"#ff1493","Zelena neon":"#39ff14","Zluta neon":"#dfff00",
+  "Zelena":"#22c55e"
+};
+
+const FILTER_SCHEMA = [
+  { key:"product_line", label:"Produktova rada", shopify:"custom.product_line", type:"list",
+    values:["Energy","Air","Extreme","Extreme Race","Therapy","Therapy Premium","Relax","Motion","Merino","NRG","Ortho"] },
+  { key:"compression_type", label:"Typ komprese", shopify:"custom.compression_type", type:"list",
+    values:["Odstupnovana (graduated)","Cilena (targeted)","Zdravotni (medical)","Rovnomerna (uniform)","Lehka (light)"] },
+  { key:"compression_class", label:"Trida komprese", shopify:"custom.compression_class", type:"list",
+    values:["Sportovni","Zdravotni 1. trida","Zdravotni 2. trida"] },
+  { key:"activity", label:"Aktivita", shopify:"custom.activity", type:"list_multi",
+    values:["Beh","Cyklistika","Trail / Hiking","Fitness","Triatlon","Lyzovani","Cestovani","Kazdodenni"] },
+  { key:"use_case", label:"Pouziti", shopify:"custom.use_case", type:"list_multi",
+    values:["Sport & vykon","Zdravotni / prevence","Regenerace","Cestovani","Kazdodenni noseni"] },
+  { key:"medical_indication", label:"Zdravotni indikace", shopify:"custom.medical_indication", type:"list_multi",
+    values:["Krcove zily","Opuchy noh","Tromboza","Syndrom nepokojnych noh","Shin splints","Prevence urazu"] },
+  { key:"material", label:"Material", shopify:"custom.material", type:"list",
+    values:["PAD Nylon + Lycra","Merino vlna","Polypropylen blend"] },
+  { key:"gender", label:"Pohlavi", shopify:"custom.gender", type:"list", values:["Unisex","Muzi","Zeny"] },
+  { key:"size", label:"Velikost", shopify:"option.size", type:"variant_option", values:["XS","S","M","L","XL","XXL"] },
+  { key:"color", label:"Barva", shopify:"option.color", type:"variant_option",
+    values:["Cierna","Modra","Cervena","Zelena/Lime","Ruzova","Tyrkysova","Biela","Mint","Neon ruzova","Veri-peri","Olivova","Lososova","Modra neon","Seda","Limetka","Ruzova neon","Zelena neon","Zluta neon","Zelena"] },
+  { key:"sock_height", label:"Vyska ponozky", shopify:"custom.sock_height", type:"list",
+    values:["No-show","Low-cut","High-cut","Super high-cut","Podkolenky (knee-high)"] },
+  { key:"features", label:"Vlastnosti", shopify:"custom.features", type:"list_multi",
+    values:["Reflexni prvky","Antimikrobialni uprava (Ag+)","Bezsve spicky","Anatomicky tvar L/R","DeoSoft","Sanitized Silver"] }
+];
+
+// SEO-optimized category names with Czech keywords
+const CATEGORIES = {
+  byType: {
+    label: "Podle typu produktu",
+    items: [
+      { id:"podkolenky", name:"Kompresni podkolenky", handle:"/collections/kompresni-podkolenky",
+        seoTitle:"Kompresni podkolenky | Royal Bay", seoH1:"Kompresni podkolenky",
+        seoDesc:"Ceske kompresni podkolenky Royal Bay. Odstupnovana i zdravotni komprese pro sport, cestovani a kazdodenni noseni. Doprava zdarma od 1500 Kc." },
+      { id:"lytkove-navleky", name:"Kompresni lytkove navleky", handle:"/collections/kompresni-lytkove-navleky",
+        seoTitle:"Kompresni lytkove navleky | Royal Bay", seoH1:"Kompresni lytkove navleky",
+        seoDesc:"Lytkove kompresni navleky Royal Bay s cilenou a odstupnovanou kompresi. Pro beh, cyklistiku a triatlon. Vyrobeno v CR." },
+      { id:"stehenni-navleky", name:"Kompresni stehenni navleky", handle:"/collections/kompresni-stehenni-navleky",
+        seoTitle:"Kompresni stehenni navleky | Royal Bay", seoH1:"Kompresni stehenni navleky",
+        seoDesc:"Stehenni kompresni navleky pro podporu svalu pri behu a cyklistice. Cilena komprese Royal Bay Extreme." },
+      { id:"pazni-navleky", name:"Kompresni pazni navleky", handle:"/collections/kompresni-pazni-navleky",
+        seoTitle:"Kompresni pazni navleky | Royal Bay", seoH1:"Kompresni pazni navleky",
+        seoDesc:"Pazni kompresni navleky pro horni koncetiny. Cilena komprese pro beh, cyklistiku a triatlon." },
+      { id:"sortky", name:"Kompresni sortky", handle:"/collections/kompresni-sortky",
+        seoTitle:"Kompresni sortky a kratasy | Royal Bay", seoH1:"Kompresni sortky",
+        seoDesc:"Sportovni kratasy s kompresnimi nohavicemi Royal Bay. Podpora vykonu pri jakemkoliv sportu." },
+      { id:"ponozky", name:"Sportovni ponozky", handle:"/collections/sportovni-ponozky",
+        seoTitle:"Sportovni ponozky | Royal Bay", seoH1:"Sportovni ponozky",
+        seoDesc:"Sportovni ponozky Royal Bay s antimikrobialni upravou a bezsvymi spickami. No-show, Low-cut, High-cut." },
+      { id:"bandaze", name:"Sportovni bandaze", handle:"/collections/sportovni-bandaze",
+        seoTitle:"Sportovni bandaze a orteze | Royal Bay", seoH1:"Sportovni bandaze",
+        seoDesc:"Kompresni kolenni a kotnickove bandaze Royal Bay Ortho. Prevence zraneni a podpora regenerace." },
+      { id:"doplnky", name:"Sportovni doplnky", handle:"/collections/sportovni-doplnky",
+        seoTitle:"Sportovni doplnky | Royal Bay", seoH1:"Sportovni doplnky",
+        seoDesc:"Funkcni sportovni doplnky Royal Bay. Celenky a dalsi prislusenstvi pro aktivni sport." },
+    ]
+  },
+  byActivity: {
+    label: "Podle sportu / aktivity",
+    items: [
+      { id:"beh", name:"Komprese pro beh", handle:"/collections/komprese-pro-beh",
+        seoTitle:"Kompresni obleceni pro beh | Royal Bay", seoH1:"Kompresni obleceni pro beh",
+        seoDesc:"Kompresni podkolenky, navleky a ponozky pro bezce. Zvyste vykon a zrychlete regeneraci s Royal Bay." },
+      { id:"cyklistika", name:"Komprese pro cyklistiku", handle:"/collections/komprese-pro-cyklistiku",
+        seoTitle:"Kompresni obleceni pro cyklistiku | Royal Bay", seoH1:"Kompresni obleceni pro cyklistiku",
+        seoDesc:"Kompresni navleky a podkolenky pro cyklisty. Lepsi prokrveni a snizeni unavy svalu." },
+      { id:"trail", name:"Komprese pro trail a turistiku", handle:"/collections/komprese-pro-trail",
+        seoTitle:"Kompresni ponozky pro trail a turistiku | Royal Bay", seoH1:"Komprese pro trail a turistiku",
+        seoDesc:"Merino kompresni ponozky a navleky pro trail running a turistiku. Termoregulace a podpora svalu." },
+      { id:"fitness", name:"Komprese pro fitness", handle:"/collections/komprese-pro-fitness",
+        seoTitle:"Kompresni obleceni pro fitness | Royal Bay", seoH1:"Komprese pro fitness",
+        seoDesc:"Kompresni navleky, sortky a bandaze pro silovy trenink a fitness. Prevence zraneni a podpora svalu." },
+      { id:"lyzovani", name:"Komprese pro lyzovani", handle:"/collections/komprese-pro-lyzovani",
+        seoTitle:"Kompresni ponozky pro lyzovani | Royal Bay", seoH1:"Komprese pro lyzovani",
+        seoDesc:"Merino kompresni podkolenky a ponozky pro lyzare. Teplo, komfort a podpora svalu na sjezdovce." },
+      { id:"cestovani", name:"Kompresni podkolenky na cestovani", handle:"/collections/kompresni-podkolenky-na-cestovani",
+        seoTitle:"Kompresni podkolenky na cestovani a do letadla | Royal Bay", seoH1:"Kompresni podkolenky na cestovani",
+        seoDesc:"Cestovni kompresni podkolenky proti otokum noh v letadle a pri dlouhem sezeni. Prevence trombozi." },
+      { id:"kazdodenni", name:"Komprese na kazdodenni noseni", handle:"/collections/komprese-na-kazdodenni-noseni",
+        seoTitle:"Kompresni ponozky na kazdodenni noseni | Royal Bay", seoH1:"Komprese na kazdodenni noseni",
+        seoDesc:"Pohodlne kompresni ponozky a podkolenky pro kazdodenni noseni. Lehka komprese proti unave noh." },
+    ]
+  },
+  byUse: {
+    label: "Podle pouziti",
+    items: [
+      { id:"sport", name:"Sportovni komprese", handle:"/collections/sportovni-komprese",
+        seoTitle:"Sportovni kompresni obleceni | Royal Bay", seoH1:"Sportovni komprese",
+        seoDesc:"Kompresni obleceni pro sport a vykon. Podkolenky, navleky, ponozky a sortky od ceskeho vyrobce Royal Bay." },
+      { id:"medical", name:"Zdravotni komprese", handle:"/collections/zdravotni-komprese",
+        seoTitle:"Zdravotni kompresni podkolenky | Royal Bay", seoH1:"Zdravotni komprese",
+        seoDesc:"Zdravotni kompresni podkolenky 2. kompresni tridy. Normovana komprese proti krcovym zilam a otokum." },
+      { id:"regenerace", name:"Komprese pro regeneraci", handle:"/collections/komprese-pro-regeneraci",
+        seoTitle:"Regeneracni kompresni podkolenky | Royal Bay", seoH1:"Komprese pro regeneraci",
+        seoDesc:"Regeneracni kompresni podkolenky a bandaze. Zrychleni zotaveni po sportu a prevence zraneni." },
+      { id:"prevence", name:"Komprese pro prevenci", handle:"/collections/komprese-pro-prevenci",
+        seoTitle:"Preventivni kompresni obleceni | Royal Bay", seoH1:"Komprese pro prevenci",
+        seoDesc:"Kompresni bandaze a podkolenky pro prevenci sportovnich zraneni. Ochrana kloubi a svalu." },
+    ]
+  },
+  special: {
+    label: "Specialni",
+    items: [
+      { id:"outlet", name:"Outlet", handle:"/collections/outlet",
+        seoTitle:"Outlet kompresniho obleceni | Royal Bay", seoH1:"Outlet",
+        seoDesc:"Kompresni podkolenky a navleky Royal Bay za outlet ceny. Sleva az 30% na vybrane produkty." },
+      { id:"na-miru", name:"Komprese na miru", handle:"/collections/komprese-na-miru",
+        seoTitle:"Kompresni obleceni na miru | Royal Bay", seoH1:"Komprese na miru",
+        seoDesc:"Kompresni podkolenky a navleky Royal Bay na miru s vlastnim logem. Pro sportovni tymy a firmy." },
+    ]
+  }
+};
+
+const PRODUCTS = [
+  // === PODKOLENKY ===
+  { id:1, name:"ROYAL BAY Energy - Kompresni podkolenky", line:"energy", type:"podkolenky",
+    price:739, priceOld:1055, isBundle:false, isOutlet:true,
+    shopifyName:"ROYAL BAY Energy | Kompresni podkolenky s odstupnovanou kompresi",
+    seoTitle:"ROYAL BAY Energy Kompresni podkolenky | Odstupnovana sportovni komprese",
+    llmDesc:"Ceske kompresni podkolenky ROYAL BAY Energy s odstupnovanou sportovni kompresi. Idealni pro beh, cyklistiku a fitness. Material: 82% PAD Nylon, 18% Lycra s antimikrobialni stribrnou upravou. Velikosti S-XXL. Vyrobeno v Ceske republice.",
+    categories:["podkolenky","sport","beh","cyklistika","fitness","outlet"],
+    params: { compression_type:"Odstupnovana (graduated)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Zelena/Lime","Ruzova","Neon ruzova","Olivova","Seda","Lososova","Modra neon"], sizes:["S","M","L","XL","XXL"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"],
+      sock_height:"Podkolenky (knee-high)",
+      features:["Reflexni prvky","Antimikrobialni uprava (Ag+)","Bezsve spicky","Anatomicky tvar L/R"] }
+  },
+  { id:3, name:"ROYAL BAY Merino - Kompresni podkolenky", line:"merino", type:"podkolenky",
+    price:805, priceOld:1150, isBundle:false, isOutlet:true,
+    shopifyName:"ROYAL BAY Merino | Kompresni podkolenky z merino vlny",
+    seoTitle:"ROYAL BAY Merino Kompresni podkolenky | Merino vlna, sportovni komprese",
+    llmDesc:"Kompresni podkolenky ROYAL BAY Merino z merino vlny s odstupnovanou kompresi. Skvele pro trail running, turistiku, lyzovani a cestovani. Prirozena termoregulace merino vlny.",
+    categories:["podkolenky","trail","lyzovani","cestovani","outlet"],
+    params: { compression_type:"Odstupnovana (graduated)", compression_class:"Sportovni",
+      material:"Merino vlna", gender:"Unisex",
+      colors:["Modra","Cierna","Zelena/Lime"], sizes:["S","M","L","XL","XXL"],
+      activities:["Trail / Hiking","Lyzovani","Cestovani","Kazdodenni"],
+      use_case:["Sport & vykon","Kazdodenni noseni"], sock_height:"Podkolenky (knee-high)",
+      features:["Antimikrobialni uprava (Ag+)","Bezsve spicky"] }
+  },
+  { id:4, name:"ROYAL BAY Air - Kompresni podkolenky", line:"air", type:"podkolenky",
+    price:791, priceOld:1130, isBundle:false, isOutlet:true,
+    shopifyName:"ROYAL BAY Air | Lehke kompresni podkolenky",
+    seoTitle:"ROYAL BAY Air Kompresni podkolenky | Lehke a prodysne",
+    llmDesc:"Odlehcene kompresni podkolenky ROYAL BAY Air. Tenke, prodysne a lehke s odstupnovanou kompresi. Idealni pro teplejsi pocasi, cestovani a kazdodenni noseni.",
+    categories:["podkolenky","sport","beh","kazdodenni","cestovani","outlet"],
+    params: { compression_type:"Odstupnovana (graduated)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Biela","Cierna"], sizes:["S","M","L","XL","XXL"],
+      activities:["Beh","Cestovani","Kazdodenni"],
+      use_case:["Sport & vykon","Kazdodenni noseni","Cestovani"], sock_height:"Podkolenky (knee-high)",
+      features:["Reflexni prvky","Bezsve spicky","Anatomicky tvar L/R"] }
+  },
+  { id:5, name:"ROYAL BAY Therapy - Kompresni podkolenky", line:"therapy", type:"podkolenky",
+    price:784, priceOld:1120, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Therapy | Zdravotni kompresni podkolenky 2. tridy",
+    seoTitle:"ROYAL BAY Therapy Zdravotni kompresni podkolenky | 2. kompresni trida",
+    llmDesc:"Zdravotni kompresni podkolenky ROYAL BAY Therapy s normovanou kompresi 2. tridy. Urceno pro lidi s krcovymi zilami, otoky noh, trombozou a syndromem nepokojnych noh. Certifikovana zdravotni komprese.",
+    categories:["podkolenky","medical","regenerace","prevence","kazdodenni","cestovani"],
+    params: { compression_type:"Zdravotni (medical)", compression_class:"Zdravotni 2. trida",
+      material:"58% PAD Nylon, 39% Lycra, 3% PP", gender:"Unisex",
+      colors:["Cervena","Cierna","Modra","Ruzova"], sizes:["S","M","L","XL","XXL"],
+      activities:["Kazdodenni","Cestovani"],
+      use_case:["Zdravotni / prevence","Regenerace","Kazdodenni noseni"],
+      medical_indication:["Krcove zily","Opuchy noh","Tromboza","Syndrom nepokojnych noh"],
+      sock_height:"Podkolenky (knee-high)", features:["Reflexni prvky"] }
+  },
+  { id:7, name:"ROYAL BAY Therapy - podkolenky NA MIRU", line:"therapy", type:"podkolenky",
+    price:1960, priceOld:null, isBundle:false, isOutlet:false, isCustom:true,
+    shopifyName:"ROYAL BAY Therapy | Zdravotni podkolenky na miru",
+    seoTitle:"ROYAL BAY Therapy Podkolenky na miru | Vlastni logo a rozmer",
+    llmDesc:"Kompresni podkolenky ROYAL BAY Therapy na miru s vlastnim logem. Zdravotni komprese 2. tridy v individualnich rozmerech. Pro sportovni tymy a firemni objednavky.",
+    categories:["podkolenky","medical","na-miru"],
+    params: { compression_type:"Zdravotni (medical)", compression_class:"Zdravotni 2. trida",
+      material:"58% PAD Nylon, 39% Lycra, 3% PP", gender:"Unisex",
+      colors:["Cierna"], sizes:["Na miru"],
+      activities:["Kazdodenni"], use_case:["Zdravotni / prevence"],
+      medical_indication:["Krcove zily","Opuchy noh","Tromboza"], sock_height:"Podkolenky (knee-high)", features:[] }
+  },
+  { id:9, name:"ROYAL BAY Therapy Premium - Kompresni podkolenky", line:"therapy-premium", type:"podkolenky",
+    price:819, priceOld:1170, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Therapy Premium | Silnejsi zdravotni kompresni podkolenky",
+    seoTitle:"ROYAL BAY Therapy Premium Zdravotni podkolenky | Silnejsi komprese 2. tridy",
+    llmDesc:"Zdravotni kompresni podkolenky ROYAL BAY Therapy Premium se silnejsim provedenim komprese 2. tridy. Pro vyssi stupen prevence a lecby zilovatnich onemocneni.",
+    categories:["podkolenky","medical","regenerace","prevence","kazdodenni"],
+    params: { compression_type:"Zdravotni (medical)", compression_class:"Zdravotni 2. trida",
+      material:"58% PAD Nylon, 39% Lycra, 3% PP", gender:"Unisex",
+      colors:["Cierna"], sizes:["S","M","L","XL","XXL"],
+      activities:["Kazdodenni","Cestovani"], use_case:["Zdravotni / prevence","Regenerace"],
+      medical_indication:["Krcove zily","Opuchy noh","Tromboza"], sock_height:"Podkolenky (knee-high)", features:[] }
+  },
+  { id:10, name:"ROYAL BAY Relax - Kompresni podkolenky", line:"relax", type:"podkolenky",
+    price:658, priceOld:940, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Relax | Regeneracni kompresni podkolenky",
+    seoTitle:"ROYAL BAY Relax Regeneracni podkolenky | Komprese pro zotaveni",
+    llmDesc:"Regeneracni kompresni podkolenky ROYAL BAY Relax s odstupnovanou kompresi. Pro rychlejsi zotaveni po sportu, cestovani a kazdodenni noseni proti unave noh.",
+    categories:["podkolenky","regenerace","cestovani","kazdodenni"],
+    params: { compression_type:"Odstupnovana (graduated)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra"], sizes:["S","M","L","XL","XXL"],
+      activities:["Kazdodenni","Cestovani"], use_case:["Regenerace","Kazdodenni noseni","Cestovani"],
+      sock_height:"Podkolenky (knee-high)", features:["Antimikrobialni uprava (Ag+)"] }
+  },
+
+  // === LYTKOVE NAVLEKY ===
+  { id:12, name:"ROYAL BAY Motion - Kompresni lytkove navleky", line:"motion", type:"lytkove-navleky",
+    price:515, priceOld:735, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Motion | Kompresni lytkove navleky",
+    seoTitle:"ROYAL BAY Motion Lytkove navleky | Odstupnovana komprese",
+    llmDesc:"Kompresni lytkove navleky ROYAL BAY Motion s odstupnovanou kompresi. Lehke, prodysne. Pro beh, cyklistiku, triatlon a fitness. Technologie DeoSoft.",
+    categories:["lytkove-navleky","sport","beh","cyklistika","fitness"],
+    params: { compression_type:"Odstupnovana (graduated)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Modra","Ruzova","Tyrkysova","Cierna","Mint","Neon pink"], sizes:["S","M","L","XL"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"],
+      features:["Reflexni prvky","DeoSoft"] }
+  },
+  { id:15, name:"ROYAL BAY Extreme - Kompresni lytkove navleky", line:"extreme", type:"lytkove-navleky",
+    price:515, priceOld:735, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Extreme | Kompresni lytkove navleky s cilenou kompresi",
+    seoTitle:"ROYAL BAY Extreme Lytkove navleky | Cilena komprese",
+    llmDesc:"Kompresni lytkove navleky ROYAL BAY Extreme s cilenou kompresi. Maximalni podpora lytkovych svalu pro narocne sporty. Pro beh, cyklistiku, triatlon a miccove sporty.",
+    categories:["lytkove-navleky","sport","beh","cyklistika","fitness"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cervena","Cierna","Zelena/Lime","Modra","Veri-peri","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"],
+      features:["Reflexni prvky","DeoSoft"] }
+  },
+  { id:18, name:"ROYAL BAY Extreme - lytkove navleky NA MIRU", line:"extreme", type:"lytkove-navleky",
+    price:1660, priceOld:null, isBundle:false, isOutlet:false, isCustom:true,
+    shopifyName:"ROYAL BAY Extreme | Lytkove navleky na miru",
+    seoTitle:"ROYAL BAY Extreme Navleky na miru | Vlastni logo",
+    llmDesc:"Kompresni lytkove navleky ROYAL BAY Extreme na miru s vlastnim logem. Cilena komprese v individualnich rozmerech pro sportovni tymy.",
+    categories:["lytkove-navleky","sport","na-miru"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cierna"], sizes:["Na miru"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"], features:["DeoSoft"] }
+  },
+  { id:19, name:"ROYAL BAY Extreme Race - Kompresni lytkove navleky", line:"extreme-race", type:"lytkove-navleky",
+    price:581, priceOld:830, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Extreme Race | Lehke kompresni lytkove navleky",
+    seoTitle:"ROYAL BAY Extreme Race Lytkove navleky | Lehka cilena komprese",
+    llmDesc:"Odlehcene kompresni lytkove navleky ROYAL BAY Extreme Race s cilenou kompresi. Tensi material pro zavodni pouziti. Beh, cyklistika, triatlon.",
+    categories:["lytkove-navleky","sport","beh","cyklistika"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Cervena","Ruzova","Zelena"], sizes:["S","M","L","XL"],
+      activities:["Beh","Cyklistika","Triatlon"], use_case:["Sport & vykon"],
+      features:["Reflexni prvky","DeoSoft"] }
+  },
+
+  // === STEHENNI NAVLEKY ===
+  { id:22, name:"ROYAL BAY Extreme - Kompresni stehenni navleky", line:"extreme", type:"stehenni-navleky",
+    price:917, priceOld:1310, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Extreme | Kompresni stehenni navleky",
+    seoTitle:"ROYAL BAY Extreme Stehenni navleky | Cilena komprese na stehna",
+    llmDesc:"Kompresni stehenni navleky ROYAL BAY Extreme s cilenou kompresi. Podpora stehennich svalu pri behu, cyklistice a dalsich sportech se zapojenim dolnich koncetin.",
+    categories:["stehenni-navleky","sport","beh","cyklistika","fitness"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra"], sizes:["S","M","L","XL"],
+      activities:["Beh","Cyklistika","Fitness"], use_case:["Sport & vykon"], features:["Reflexni prvky"] }
+  },
+
+  // === PAZNI NAVLEKY ===
+  { id:23, name:"ROYAL BAY Extreme - Kompresni pazni navleky", line:"extreme", type:"pazni-navleky",
+    price:616, priceOld:880, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Extreme | Kompresni pazni navleky",
+    seoTitle:"ROYAL BAY Extreme Pazni navleky | Cilena komprese na paze",
+    llmDesc:"Kompresni pazni navleky ROYAL BAY Extreme s cilenou kompresi hornich koncetin. Pro beh, cyklistiku, triatlon a fitness.",
+    categories:["pazni-navleky","sport","beh","cyklistika","fitness"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Cervena"], sizes:["S","M","L","XL"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"], features:["Reflexni prvky"] }
+  },
+
+  // === SORTKY ===
+  { id:24, name:"ROYAL BAY Extreme - Kratasy s kompresnimi nohavicemi", line:"extreme", type:"sortky",
+    price:1736, priceOld:2480, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Extreme | Kompresni sortky s nohavicemi",
+    seoTitle:"ROYAL BAY Extreme Kompresni sortky | Kratasy s kompresnimi nohavicemi",
+    llmDesc:"Sportovni kratasy ROYAL BAY Extreme s kompresnimi nohavicemi. Cilena komprese pro podporu vykonu pri behu, cyklistice, triatlonu a fitness.",
+    categories:["sortky","sport","beh","cyklistika","fitness"],
+    params: { compression_type:"Cilena (targeted)", compression_class:"Sportovni",
+      material:"75% PAD Nylon, 25% Lycra", gender:"Unisex",
+      colors:["Cierna"], sizes:["S","M","L","XL","XXL"],
+      activities:["Beh","Cyklistika","Fitness","Triatlon"], use_case:["Sport & vykon"], features:["DeoSoft"] }
+  },
+
+  // === PONOZKY ===
+  { id:25, name:"ROYAL BAY Merino - Ponozky Super high-cut", line:"merino", type:"ponozky",
+    price:399, priceOld:570, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Merino | Sportovni ponozky Super High-cut",
+    seoTitle:"ROYAL BAY Merino Ponozky Super High-cut | Merino vlna",
+    llmDesc:"Sportovni ponozky ROYAL BAY Merino z merino vlny ve vysce Super High-cut. Skvele pro trail running, turistiku a lyzovani. Prirozena termoregulace.",
+    categories:["ponozky","trail","lyzovani"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"Merino vlna", gender:"Unisex",
+      colors:["Modra","Cierna","Zelena/Lime"], sizes:["S","M","L","XL"],
+      activities:["Trail / Hiking","Lyzovani"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"Super high-cut", features:["Antimikrobialni uprava (Ag+)"] }
+  },
+  { id:26, name:"ROYAL BAY Sportovni ponozky No-show 2.0", line:"nrg", type:"ponozky",
+    price:287, priceOld:410, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky No-show",
+    seoTitle:"ROYAL BAY NRG Ponozky No-show | Neviditelne sportovni ponozky",
+    llmDesc:"Neviditelne sportovni ponozky ROYAL BAY NRG ve vysce No-show. Antimikrobialni uprava Sanitized Silver a bezsve spicky proti otlakum. Pro beh a fitness.",
+    categories:["ponozky","sport","beh","fitness"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness","Kazdodenni"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"No-show", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:28, name:"ROYAL BAY Sportovni ponozky Low-cut", line:"nrg", type:"ponozky",
+    price:308, priceOld:440, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky Low-cut",
+    seoTitle:"ROYAL BAY NRG Ponozky Low-cut | Nizke sportovni ponozky",
+    llmDesc:"Nizke sportovni ponozky ROYAL BAY NRG Low-cut. Antimikrobialni uprava, bezsve spicky, zpevnena pata. Pro beh, fitness a kazdodenni noseni.",
+    categories:["ponozky","sport","beh","fitness"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness","Kazdodenni"], use_case:["Sport & vykon"],
+      sock_height:"Low-cut", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:30, name:"ROYAL BAY Sportovni ponozky Low-cut 2.0", line:"nrg", type:"ponozky",
+    price:308, priceOld:440, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky Low-cut 2.0",
+    seoTitle:"ROYAL BAY NRG Ponozky Low-cut 2.0 | Vylepsene nizke ponozky",
+    llmDesc:"Vylepsene nizke sportovni ponozky ROYAL BAY NRG Low-cut 2.0. Antimikrobialni uprava Sanitized Silver, bezsve spicky.",
+    categories:["ponozky","sport","beh","fitness"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness","Kazdodenni"], use_case:["Sport & vykon"],
+      sock_height:"Low-cut", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:31, name:"ROYAL BAY Sportovni ponozky High-cut", line:"nrg", type:"ponozky",
+    price:329, priceOld:470, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky High-cut",
+    seoTitle:"ROYAL BAY NRG Ponozky High-cut | Vyssi sportovni ponozky",
+    llmDesc:"Vyssi sportovni ponozky ROYAL BAY NRG High-cut. Antimikrobialni uprava, bezsve spicky. Pro beh, fitness a trail.",
+    categories:["ponozky","sport","beh","fitness","trail"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness","Trail / Hiking"], use_case:["Sport & vykon"],
+      sock_height:"High-cut", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:33, name:"ROYAL BAY Sportovni ponozky High-cut 2.0", line:"nrg", type:"ponozky",
+    price:329, priceOld:470, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky High-cut 2.0",
+    seoTitle:"ROYAL BAY NRG Ponozky High-cut 2.0 | Vylepsene vyssi ponozky",
+    llmDesc:"Vylepsene vyssi sportovni ponozky ROYAL BAY NRG High-cut 2.0. Antimikrobialni uprava, bezsve spicky.",
+    categories:["ponozky","sport","beh","fitness"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness"], use_case:["Sport & vykon"],
+      sock_height:"High-cut", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:34, name:"ROYAL BAY Sportovni ponozky Super high-cut 2.0", line:"nrg", type:"ponozky",
+    price:343, priceOld:490, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY NRG | Sportovni ponozky Super High-cut",
+    seoTitle:"ROYAL BAY NRG Ponozky Super High-cut | Nejvyssi sportovni ponozky",
+    llmDesc:"Nejvyssi sportovni ponozky ROYAL BAY NRG Super High-cut. Pro beh, fitness a trail. Bezsve spicky, antimikrobialni uprava.",
+    categories:["ponozky","sport","beh","fitness","trail"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"90% PAD Nylon, 10% Lycra", gender:"Unisex",
+      colors:["Cierna","Modra","Ruzova neon","Modra neon","Limetka"], sizes:["S","M","L","XL"],
+      activities:["Beh","Fitness","Trail / Hiking"], use_case:["Sport & vykon"],
+      sock_height:"Super high-cut", features:["Bezsve spicky","Sanitized Silver"] }
+  },
+  { id:36, name:"ROYAL BAY Air - Super high-cut ponozky", line:"air", type:"ponozky",
+    price:343, priceOld:490, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Air | Sportovni ponozky Super High-cut",
+    seoTitle:"ROYAL BAY Air Ponozky Super High-cut | Lehke prodysne ponozky",
+    llmDesc:"Lehke prodysne sportovni ponozky ROYAL BAY Air Super High-cut. Pro beh, kazdodenni noseni a cestovani.",
+    categories:["ponozky","sport","kazdodenni","beh"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Biela"], sizes:["S","M","L","XL"],
+      activities:["Beh","Kazdodenni","Cestovani"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"Super high-cut", features:["Bezsve spicky"] }
+  },
+  { id:37, name:"ROYAL BAY Air - Low-cut ponozky", line:"air", type:"ponozky",
+    price:308, priceOld:440, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Air | Sportovni ponozky Low-cut",
+    seoTitle:"ROYAL BAY Air Ponozky Low-cut | Lehke nizke ponozky",
+    llmDesc:"Lehke nizke sportovni ponozky ROYAL BAY Air Low-cut. Tenke, prodysne. Pro beh a kazdodenni noseni.",
+    categories:["ponozky","sport","kazdodenni","beh"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Biela"], sizes:["S","M","L","XL"],
+      activities:["Beh","Kazdodenni"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"Low-cut", features:["Bezsve spicky"] }
+  },
+  { id:38, name:"ROYAL BAY Air - High-cut ponozky", line:"air", type:"ponozky",
+    price:329, priceOld:470, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Air | Sportovni ponozky High-cut",
+    seoTitle:"ROYAL BAY Air Ponozky High-cut | Lehke vyssi ponozky",
+    llmDesc:"Lehke vyssi sportovni ponozky ROYAL BAY Air High-cut. Prodysne a tenke. Pro beh a kazdodenni noseni.",
+    categories:["ponozky","sport","kazdodenni","beh"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Biela"], sizes:["S","M","L","XL"],
+      activities:["Beh","Kazdodenni"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"High-cut", features:["Bezsve spicky"] }
+  },
+  { id:39, name:"ROYAL BAY Air - No-show ponozky", line:"air", type:"ponozky",
+    price:287, priceOld:410, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Air | Sportovni ponozky No-show",
+    seoTitle:"ROYAL BAY Air Ponozky No-show | Lehke neviditelne ponozky",
+    llmDesc:"Lehke neviditelne sportovni ponozky ROYAL BAY Air No-show. Tenke, prodysne. Pro beh a kazdodenni noseni.",
+    categories:["ponozky","sport","kazdodenni","beh"],
+    params: { compression_type:"Lehka (light)", compression_class:"Sportovni",
+      material:"82% PAD Nylon, 18% Lycra", gender:"Unisex",
+      colors:["Cierna","Biela"], sizes:["S","M","L","XL"],
+      activities:["Beh","Kazdodenni"], use_case:["Sport & vykon","Kazdodenni noseni"],
+      sock_height:"No-show", features:["Bezsve spicky"] }
+  },
+
+  // === BANDAZE ===
+  { id:40, name:"ROYAL BAY Ortho - Kolenni navlek", line:"ortho", type:"bandaze",
+    price:483, priceOld:690, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Ortho | Kompresni kolenni bandaz",
+    seoTitle:"ROYAL BAY Ortho Kolenni bandaz | Kompresni kolenni navlek",
+    llmDesc:"Kompresni kolenni bandaz ROYAL BAY Ortho. Prevence pohmozdenin a zraneni kolena pri sportu. Podpora regenerace po zraneni vazu a slach. Rovnomerna komprese.",
+    categories:["bandaze","medical","prevence","regenerace","sport","beh","fitness"],
+    params: { compression_type:"Rovnomerna (uniform)", compression_class:"Sportovni",
+      material:"60% PAD Nylon, 40% Lycra", gender:"Unisex",
+      colors:["Cierna"], sizes:["S","M","L","XL","XXL"],
+      activities:["Beh","Fitness","Kazdodenni"], use_case:["Zdravotni / prevence","Regenerace","Sport & vykon"],
+      medical_indication:["Prevence urazu"], features:[] }
+  },
+  { id:41, name:"ROYAL BAY Ortho - Kotnickovy navlek", line:"ortho", type:"bandaze",
+    price:427, priceOld:610, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY Ortho | Kompresni kotnickova bandaz",
+    seoTitle:"ROYAL BAY Ortho Kotnickova bandaz | Kompresni kotnikovy navlek",
+    llmDesc:"Kompresni kotnickova bandaz ROYAL BAY Ortho. Prevence zraneni kotniku pri sportu a turistice. Podpora regenerace po podvrtnuti. Rovnomerna komprese.",
+    categories:["bandaze","medical","prevence","regenerace","sport","beh","fitness"],
+    params: { compression_type:"Rovnomerna (uniform)", compression_class:"Sportovni",
+      material:"60% PAD Nylon, 40% Lycra", gender:"Unisex",
+      colors:["Cierna"], sizes:["S","M","L","XL","XXL"],
+      activities:["Beh","Fitness","Trail / Hiking"], use_case:["Zdravotni / prevence","Regenerace","Sport & vykon"],
+      medical_indication:["Prevence urazu"], features:[] }
+  },
+
+  // === DOPLNKY ===
+  { id:42, name:"ROYAL BAY sportovni celenka", line:"accessories", type:"doplnky",
+    price:203, priceOld:290, isBundle:false, isOutlet:false,
+    shopifyName:"ROYAL BAY | Funkcni sportovni celenka",
+    seoTitle:"ROYAL BAY Sportovni celenka | Funkcni celenka pro sport",
+    llmDesc:"Funkcni sportovni celenka ROYAL BAY. Odvod vlhkosti a pohodli pri behu, cyklistice a fitness.",
+    categories:["doplnky","sport","beh","cyklistika","fitness"],
+    params: { material:"Funkcni material", gender:"Unisex",
+      colors:["Ruzova neon","Cierna","Modra neon","Zelena neon","Zluta neon"], sizes:["Uni"],
+      activities:["Beh","Cyklistika","Fitness"], use_case:["Sport & vykon"], features:[] }
+  },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentTab = 'all';
+let currentLineFilter = 'all';
+let currentCategoryFilter = null;
+
+function loadState() {
+  const saved = localStorage.getItem('rb-planner-v3');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      data.forEach(s => {
+        const p = PRODUCTS.find(x => x.id === s.id);
+        if (p) {
+          if (s.categories && s.categories.length) p.categories = s.categories;
+          if (s.shopifyName) p.shopifyName = s.shopifyName;
+          if (s.seoTitle) p.seoTitle = s.seoTitle;
+          if (s.llmDesc) p.llmDesc = s.llmDesc;
+        }
+      });
+    } catch(e) {}
+  }
+}
+function saveState() {
+  localStorage.setItem('rb-planner-v3', JSON.stringify(
+    PRODUCTS.map(p => ({ id:p.id, categories:p.categories, shopifyName:p.shopifyName, seoTitle:p.seoTitle, llmDesc:p.llmDesc }))
+  ));
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function getLineClass(l) { return { energy:'line-energy',air:'line-air',extreme:'line-extreme','extreme-race':'line-extreme-race',therapy:'line-therapy','therapy-premium':'line-therapy-premium',relax:'line-relax',motion:'line-motion',merino:'line-merino',nrg:'line-nrg',ortho:'line-ortho',accessories:'line-accessories' }[l]||'line-accessories'; }
+function getLineName(l) { return { energy:'Energy',air:'Air',extreme:'Extreme','extreme-race':'Extreme Race',therapy:'Therapy','therapy-premium':'Therapy Premium',relax:'Relax',motion:'Motion',merino:'Merino',nrg:'NRG',ortho:'Ortho',accessories:'Accessories' }[l]||l; }
+function getCatName(id) { for(const g of Object.values(CATEGORIES)) { const c=g.items.find(x=>x.id===id); if(c) return c.name; } return id; }
+function getCat(id) { for(const g of Object.values(CATEGORIES)) { const c=g.items.find(x=>x.id===id); if(c) return c; } return null; }
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderCategoryTree() {
+  const el = document.getElementById('category-tree');
+  let h = '';
+  for (const [k,g] of Object.entries(CATEGORIES)) {
+    h += `<div class="cat-group"><div class="cat-group-title">${g.label}</div>`;
+    for (const c of g.items) {
+      const n = PRODUCTS.filter(p => p.categories.includes(c.id)).length;
+      const act = currentCategoryFilter === c.id;
+      h += `<div class="cat-item${act?' active':''}" data-cat="${c.id}">
+        <span><span class="cat-icon">${c.id==='podkolenky'?'🧦':c.id==='lytkove-navleky'?'🦵':c.id==='stehenni-navleky'?'🦿':c.id==='pazni-navleky'?'💪':c.id==='sortky'?'🩳':c.id==='ponozky'?'🧦':c.id==='bandaze'?'🩹':c.id==='doplnky'?'🎽':c.id==='beh'?'🏃':c.id==='cyklistika'?'🚴':c.id==='trail'?'🥾':c.id==='fitness'?'🏋️':c.id==='lyzovani'?'⛷️':c.id==='cestovani'?'✈️':c.id==='kazdodenni'?'👟':c.id==='sport'?'⚡':c.id==='medical'?'🏥':c.id==='regenerace'?'🔄':c.id==='prevence'?'🛡️':c.id==='baleni'?'📦':c.id==='outlet'?'🏷️':c.id==='na-miru'?'✂️':'📁'}</span>${c.name}</span>
+        <span class="count">${n}</span>
+      </div>`;
+      if (act) {
+        h += `<div class="cat-seo" style="display:block">
+          <div style="font-size:10px;color:var(--accent2)">SEO Title: ${c.seoTitle||''}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${c.handle}</div>
+        </div>`;
+      }
+    }
+    h += `</div>`;
+  }
+  el.innerHTML = h;
+}
+
+function renderParamsHtml(p) {
+  if (!p.params) return '';
+  const pr = p.params; let r = '';
+  if (pr.compression_type) r+=`<tr><td>Komprese</td><td><span class="param-tag">${pr.compression_type}</span></td></tr>`;
+  if (pr.compression_class) r+=`<tr><td>Trida</td><td><span class="param-tag">${pr.compression_class}</span></td></tr>`;
+  if (pr.material) r+=`<tr><td>Material</td><td><span class="param-tag">${pr.material}</span></td></tr>`;
+  if (pr.sock_height) r+=`<tr><td>Vyska</td><td><span class="param-tag">${pr.sock_height}</span></td></tr>`;
+  if (pr.colors?.length) r+=`<tr><td>Barvy</td><td>${pr.colors.map(c=>`<span class="param-color"><span class="color-dot" style="background:${COLOR_MAP[c]||'#888'}"></span>${c}</span>`).join('')}</td></tr>`;
+  if (pr.sizes?.length) r+=`<tr><td>Velikosti</td><td>${pr.sizes.map(s=>`<span class="param-tag">${s}</span>`).join('')}</td></tr>`;
+  if (pr.activities?.length) r+=`<tr><td>Aktivity</td><td>${pr.activities.map(a=>`<span class="param-tag">${a}</span>`).join('')}</td></tr>`;
+  if (pr.use_case?.length) r+=`<tr><td>Pouziti</td><td>${pr.use_case.map(u=>`<span class="param-tag">${u}</span>`).join('')}</td></tr>`;
+  if (pr.medical_indication?.length) r+=`<tr><td>Indikace</td><td>${pr.medical_indication.map(m=>`<span class="param-tag">${m}</span>`).join('')}</td></tr>`;
+  if (pr.features?.length) r+=`<tr><td>Vlastnosti</td><td>${pr.features.map(f=>`<span class="param-tag">${f}</span>`).join('')}</td></tr>`;
+  return r ? `<table class="params-table">${r}</table>` : '';
+}
+
+function renderProducts() {
+  const el = document.getElementById('product-grid');
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const filtered = PRODUCTS.filter(p => {
+    if (currentTab==='unassigned' && p.categories.length>0) return false;
+    if (currentLineFilter!=='all' && p.line!==currentLineFilter) return false;
+    if (currentCategoryFilter && !p.categories.includes(currentCategoryFilter)) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.shopifyName.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  let h = '';
+  filtered.forEach(p => {
+    h += `<div class="product-card ${p.categories.length?'has-category':'no-category'}" draggable="true" data-id="${p.id}">
+      <div>
+        <span class="product-line ${getLineClass(p.line)}">${getLineName(p.line)}</span>
+        ${p.isOutlet?'<span class="product-line line-accessories">Outlet</span>':''}
+        ${p.isCustom?'<span class="product-line line-accessories">Custom</span>':''}
+      </div>
+      <div class="product-name">${p.name}</div>
+      <div class="product-price">
+        ${p.priceOld?`<span class="old">${p.priceOld} Kc</span>`:''}
+        <span class="current">${p.price} Kc</span>
+      </div>
+      <div class="seo-row seo-shopify">
+        <span class="label">Shopify:</span>
+        <input type="text" value="${p.shopifyName}" data-field="shopifyName" data-pid="${p.id}">
+      </div>
+      <div class="seo-row seo-title">
+        <span class="label">SEO Title:</span>
+        <input type="text" value="${p.seoTitle}" data-field="seoTitle" data-pid="${p.id}">
+      </div>
+      <div class="seo-row seo-llm">
+        <span class="label">LLM Desc:</span>
+        <input type="text" value="${p.llmDesc}" data-field="llmDesc" data-pid="${p.id}">
+      </div>
+      <div class="product-categories">
+        ${p.categories.map(c=>`<span class="product-cat-tag">${getCatName(c)} <span class="remove" data-pid="${p.id}" data-cat="${c}">&times;</span></span>`).join('')}
+        <span class="product-cat-tag" style="cursor:pointer;color:var(--accent);border-color:var(--accent)" data-assign="${p.id}">+</span>
+      </div>
+      ${renderParamsHtml(p)}
+    </div>`;
+  });
+  el.innerHTML = h || '<div style="color:var(--text-muted);padding:40px;text-align:center">No products match</div>';
+  updateStats();
+}
+
+function renderTreeView() {
+  const el = document.getElementById('tree-view');
+  let h = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px">';
+  for (const g of Object.values(CATEGORIES)) {
+    for (const c of g.items) {
+      const ps = PRODUCTS.filter(p => p.categories.includes(c.id));
+      h += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">${c.name} <span style="color:var(--text-muted);font-weight:400">(${ps.length})</span></div>
+        <div style="font-size:10px;color:var(--accent2);margin-bottom:2px">${c.handle}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${c.seoTitle||''}</div>`;
+      if (!ps.length) h += `<div style="color:var(--text-muted);font-size:12px;font-style:italic">Empty</div>`;
+      else ps.forEach(p => { h += `<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--border)"><span class="product-line ${getLineClass(p.line)}" style="font-size:10px">${getLineName(p.line)}</span> ${p.shopifyName}</div>`; });
+      h += `</div>`;
+    }
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+function renderFilterPreview() {
+  const el = document.getElementById('filter-preview');
+  let h = '<h3 style="margin-bottom:12px">Shopify Filter Schema (Metafields)</h3>';
+  h += '<div class="filter-schema-grid">';
+  FILTER_SCHEMA.forEach(f => {
+    h += `<div class="filter-card"><h4>${f.label} <span class="shopify-key">${f.shopify}</span></h4>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Type: ${f.type}</div>
+      <div>${f.values.map(v=>`<span class="fv">${v}</span>`).join('')}</div></div>`;
+  });
+  h += '</div>';
+  h += '<h3 style="margin:20px 0 12px">Per-Category Filter Aggregation</h3>';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:12px">';
+  for (const c of CATEGORIES.byType.items) {
+    const ps = PRODUCTS.filter(p => p.categories.includes(c.id) && !p.isBundle);
+    if (!ps.length) continue;
+    const agg = {};
+    FILTER_SCHEMA.forEach(f => { agg[f.key] = new Set(); });
+    ps.forEach(p => { if(!p.params) return; const pr=p.params;
+      if(pr.compression_type) agg.compression_type.add(pr.compression_type);
+      if(pr.compression_class) agg.compression_class.add(pr.compression_class);
+      if(pr.material) agg.material.add(pr.material);
+      if(pr.gender) agg.gender.add(pr.gender);
+      if(pr.sock_height) agg.sock_height.add(pr.sock_height);
+      (pr.colors||[]).forEach(x=>agg.color.add(x));
+      (pr.sizes||[]).forEach(x=>agg.size.add(x));
+      (pr.activities||[]).forEach(x=>agg.activity.add(x));
+      (pr.use_case||[]).forEach(x=>agg.use_case.add(x));
+      (pr.medical_indication||[]).forEach(x=>agg.medical_indication.add(x));
+      (pr.features||[]).forEach(x=>agg.features.add(x));
+      agg.product_line.add(getLineName(p.line));
+    });
+    h += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">${c.name} (${ps.length})</div>`;
+    FILTER_SCHEMA.forEach(f => {
+      const v = agg[f.key]; if(!v||v.size===0) return;
+      if(v.size<=1 && !['size','color'].includes(f.key)) return;
+      h += `<div style="margin-bottom:6px"><div style="font-size:12px;font-weight:500;margin-bottom:2px">${f.label}</div>
+        <div>${[...v].map(x => f.key==='color'?`<span class="param-color"><span class="color-dot" style="background:${COLOR_MAP[x]||'#888'}"></span>${x}</span>`:`<span class="param-tag">${x}</span>`).join('')}</div></div>`;
+    });
+    h += `</div>`;
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+function renderSeoGuide() {
+  const el = document.getElementById('seo-guide');
+  el.innerHTML = `
+  <div class="info-panel" style="border-color:var(--accent)">
+    <h3 style="color:var(--accent)">SEO Best Practices — Nazvy produktov</h3>
+    <div class="example">
+      <div class="bad">ZLE: "ROYAL BAY Energy - Kompresni podkolenky"</div>
+      <div class="good">DOBRE: "ROYAL BAY Energy | Kompresni podkolenky s odstupnovanou kompresi"</div>
+    </div>
+    <ul style="margin-top:10px">
+      <li><b>Vzorec nazvu:</b> <code>Brand Rada | Typ produktu + Klucovy benefit</code></li>
+      <li><b>Pipe (|) namiesto pomlcky</b> — lepsi vizualni oddelenie v SERP</li>
+      <li><b>Klucove slovo na zaciatku</b> — "Kompresni podkolenky" nie "Podkolenky kompresni"</li>
+      <li><b>Benefit v nazve</b> — "s odstupnovanou kompresi", "zdravotni 2. tridy"</li>
+      <li><b>Dlzka SEO Title:</b> 50-60 znakov (max 70)</li>
+      <li><b>Dlzka Meta Description:</b> 140-160 znakov</li>
+    </ul>
+    <div class="example" style="margin-top:12px">
+      <div style="font-size:11px;color:var(--text-muted)">Priklady SEO Title:</div>
+      <div class="good">ROYAL BAY Energy Kompresni podkolenky | Sportovni komprese</div>
+      <div class="good">ROYAL BAY Therapy Zdravotni podkolenky | 2. kompresni trida</div>
+      <div class="good">ROYAL BAY Extreme Lytkove navleky | Cilena komprese pro sport</div>
+    </div>
+  </div>
+
+  <div class="info-panel" style="border-color:var(--accent2)">
+    <h3 style="color:var(--accent2)">SEO Best Practices — Nazvy kategorii</h3>
+    <div class="example">
+      <div class="bad">ZLE: "/collections/podkolenky" s H1 "Podkolenky"</div>
+      <div class="good">DOBRE: "/collections/kompresni-podkolenky" s H1 "Kompresni podkolenky"</div>
+    </div>
+    <ul style="margin-top:10px">
+      <li><b>Handle = klucove slovo:</b> <code>/kompresni-podkolenky</code> nie <code>/podkolenky</code></li>
+      <li><b>H1 = presny nazov kategorie</b> s hlavnym klucovym slovom</li>
+      <li><b>Activity kolekcie:</b> "Komprese pro beh" > "Beh" (kontextove klucove slovo)</li>
+      <li><b>Unikatny popis na kazdej kategorii</b> — min. 200 slov s klucovymi slovami</li>
+      <li><b>Breadcrumbs:</b> Home > Kompresni podkolenky > ROYAL BAY Energy</li>
+    </ul>
+  </div>
+
+  <div class="info-panel" style="border-color:var(--purple)">
+    <h3 style="color:var(--purple)">LLM/AI Optimization (GEO) — Jak byt vyhledatelny v ChatGPT, Claude, Gemini</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+      Generative Engine Optimization (GEO) je nova disciplina — optimalizacia obsahu, aby ho AI modely citovali pri odpovediach uzivatelom.
+    </p>
+    <ul style="margin-top:8px">
+      <li><b>Strukturovane data (JSON-LD):</b> Product schema, FAQ schema, Brand schema na kazdom produkte a kategorii</li>
+      <li><b>Jasne, fakticke odpovede:</b> Kazdy produkt musi mat popis, ktory priamo odpoveda na otazky typu "Ake su najlepsie kompresni podkolenky na beh?"</li>
+      <li><b>Entitna identita:</b> Konzistentne pouzivat "Royal Bay" ako znacku s atributami: cesky vyrobce, kompresni obleceni, sport + medical</li>
+      <li><b>Unikatne tvrdenia s dokazmi:</b> "Vyrobeno v CR", "Normovana zdravotni komprese 2. tridy", "Certifikovany zdravotnicky prostredek"</li>
+      <li><b>FAQ sekcia na kazdej kategorii:</b> Otazky v prirodzenom jazyku, napr.:
+        <ul>
+          <li>"Jake kompresni podkolenky jsou nejlepsi na beh?"</li>
+          <li>"Pomahaji kompresni podkolenky proti krcovym zilam?"</li>
+          <li>"Jaky je rozdil mezi Energy a Therapy?"</li>
+        </ul>
+      </li>
+      <li><b>Porovnavaci tabulky:</b> Energy vs Air vs Extreme — LLM models miluju strukturovane porovnani</li>
+      <li><b>Citovania a studie:</b> Odkazovat na odborne studie o kompresi (uz mate sekci /odborne-studie)</li>
+      <li><b>"About" page s E-E-A-T signalmi:</b> Kdo stoji za znackou, jak dlouho vyrabite, certifikace</li>
+    </ul>
+    <div class="example" style="margin-top:12px">
+      <div style="font-size:11px;color:var(--text-muted)">Priklad LLM-optimalizovaneho popisu produktu:</div>
+      <div style="margin-top:6px;font-size:12px;line-height:1.6">
+        "Ceske kompresni podkolenky ROYAL BAY Energy s odstupnovanou sportovni kompresi. Idealni pro beh, cyklistiku a fitness.
+        Material: 82% PAD Nylon, 18% Lycra s antimikrobialni stribrnou upravou. Bezšve spicky proti otlakum.
+        Reflexni prvky pro bezpecnost. Velikosti S-XXL. Vyrobeno v Ceske republice znackou Royal Bay."
+      </div>
+    </div>
+
+    <h4 style="margin-top:16px;color:var(--purple)">Shopify implementacia LLM optimalizace:</h4>
+    <ul style="margin-top:6px">
+      <li><b>Metafield <code>custom.llm_description</code>:</b> Dlhsi, faktickyy popis (150-250 slov) optimalizovany pre AI citaci</li>
+      <li><b>JSON-LD Product schema</b> s fields: name, brand, description, offers, material, audience</li>
+      <li><b>FAQ schema</b> na kazdej kategorii (3-5 otazok) — ChatGPT/Gemini tieto data priamo cituju</li>
+      <li><b>Blog content</b> odpoviadajuci na longtail otazky ("Jak vybrat kompresni podkolenky na beh?")</li>
+      <li><b>Porovnavacie clanky:</b> "Royal Bay Energy vs Therapy — jaky je rozdil?" — AI modely miluju porovnania</li>
+    </ul>
+  </div>
+
+  <div class="info-panel" style="border-color:var(--green)">
+    <h3 style="color:var(--green)">SEO Poziadavky pre Shopify — Checklist pre Mime Digital</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
+      Konkretne poziadavky, ktore musi Mime Digital implementovat v Shopify theme a nastaveniach.
+    </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-top:10px">
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">1. Technicky SEO</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li>Canonical URL na kazdej stranke</li>
+          <li>Hreflang tag <code>cs-CZ</code> (pouze cesky e-shop)</li>
+          <li>Sitemap.xml s prioritami: homepage 1.0, kategorie 0.8, produkty 0.6</li>
+          <li>Robots.txt — blokovat /cart, /checkout, /account</li>
+          <li>Core Web Vitals: LCP &lt; 2.5s, CLS &lt; 0.1, INP &lt; 200ms</li>
+          <li>Lazy loading obrazkov s WebP formatom</li>
+          <li>Breadcrumbs s JSON-LD <code>BreadcrumbList</code> schema</li>
+          <li>301 redirecty z FastCentrik URL na nove Shopify URL</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">2. On-Page SEO — Produkty</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li><b>Title tag:</b> <code>Brand Rada Typ | Benefit</code> (50-60 znakov)</li>
+          <li><b>Meta description:</b> unikatny, 140-160 znakov, s CTA</li>
+          <li><b>H1:</b> presny nazov produktu (1x na stranke)</li>
+          <li><b>URL handle:</b> <code>/products/royal-bay-energy-kompresni-podkolenky</code></li>
+          <li><b>Alt text obrazkov:</b> "ROYAL BAY Energy kompresni podkolenky cierna farba"</li>
+          <li><b>Popis produktu:</b> min. 300 slov, strukturovany s H2/H3</li>
+          <li><b>Internal linking:</b> odkazovat na prislusne kategorie a blog clanky</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">3. On-Page SEO — Kategorie</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li><b>Unikatny popis:</b> min. 200 slov nad produktami + 150 slov pod</li>
+          <li><b>H1:</b> klucove slovo kategorie ("Kompresni podkolenky")</li>
+          <li><b>FAQ sekcia:</b> 3-5 otazok pod produktami (FAQ schema)</li>
+          <li><b>Filtry ne-indexovat:</b> <code>noindex</code> na filtrovanych stankach</li>
+          <li><b>Pagination:</b> <code>rel=next/prev</code> alebo infinite scroll</li>
+          <li><b>Cross-sell bloky:</b> "Mohlo by vas zajimat" s linkami na dalsi kategorie</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">4. Strukturovane data (Schema.org)</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li><b>Product schema</b> na kazdej product page (name, brand, offers, image)</li>
+          <li><b>AggregateRating</b> + <b>Review</b> (az budete mat recenzie)</li>
+          <li><b>FAQ schema</b> na kategoriach a blogu</li>
+          <li><b>BreadcrumbList</b> na vsetkych strankach</li>
+          <li><b>Organization</b> schema na homepage</li>
+          <li><b>LocalBusiness</b> s adresou vyrobcu</li>
+          <li><b>CollectionPage</b> schema na kategoriach</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">5. Content strategie</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li><b>Blog:</b> min. 2 clanky mesacne (1500+ slov)</li>
+          <li>Temata: "Jak vybrat kompresni podkolenky", "Komprese pri behu"</li>
+          <li><b>Porovnavacie clanky:</b> "Energy vs Therapy — jaky je rozdil?"</li>
+          <li><b>Odborne clanky:</b> "Co je odstupnovana komprese a jak funguje?"</li>
+          <li><b>Sezonni obsah:</b> "Kompresni podkolenky na lyzovani", "Letni beh"</li>
+          <li><b>Internal linking:</b> kazdy clanek min. 3 linky na produkty/kategorie</li>
+        </ul>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">6. Migracni SEO checklist</h4>
+        <ul style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <li><b>Exportovat vsetky URL</b> z FastCentrik (Screaming Frog crawl)</li>
+          <li><b>301 redirect mapa:</b> stare URL → nove Shopify URL</li>
+          <li><b>Google Search Console:</b> zmenit property, submitnout novy sitemap</li>
+          <li><b>Zachovat existujuci content:</b> neprijidte o indexovane stranky</li>
+          <li><b>Monitorovat 404:</b> denne pocas prvych 2 tyzdnov po migraci</li>
+          <li><b>Disavow file:</b> preniest zo stareho GSC profilu</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <h3>Navrhnuty SEO Title format pre vsetky produkty</h3>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:8px">
+      <tr style="border-bottom:2px solid var(--border)"><td style="padding:4px 8px;font-weight:600">Produkt</td><td style="padding:4px 8px;font-weight:600">SEO Title</td><td style="padding:4px 8px;font-weight:600;width:40px">Len</td></tr>
+      ${PRODUCTS.filter(p=>!p.isBundle).map(p=>`<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px 8px"><span class="product-line ${getLineClass(p.line)}" style="font-size:10px">${getLineName(p.line)}</span></td><td style="padding:4px 8px">${p.seoTitle}</td><td style="padding:4px 8px;color:${p.seoTitle.length>70?'var(--red)':p.seoTitle.length>60?'var(--orange)':'var(--green)'}">${p.seoTitle.length}</td></tr>`).join('')}
+    </table>
+  </div>`;
+}
+
+function updateStats() {
+  const t=PRODUCTS.length, a=PRODUCTS.filter(p=>p.categories.length>0).length;
+  let totalColors=0; PRODUCTS.forEach(p=>{if(p.params?.colors) totalColors+=p.params.colors.length;});
+  document.getElementById('stat-total').textContent=t;
+  document.getElementById('stat-assigned').textContent=a;
+  document.getElementById('stat-unassigned').textContent=t-a;
+  document.getElementById('stat-variants').textContent=totalColors;
+}
+
+function renderAll() { renderCategoryTree(); showCurrentView(); }
+
+function showCurrentView() {
+  const grid=document.getElementById('product-grid'), tree=document.getElementById('tree-view'),
+    fp=document.getElementById('filter-preview'), seo=document.getElementById('seo-guide'),
+    vc=document.getElementById('view-controls');
+  const vv=document.getElementById('variants-view');
+  grid.style.display='none'; tree.style.display='none'; fp.style.display='none'; seo.style.display='none'; vv.style.display='none';
+  vc.style.display = ['all','unassigned'].includes(currentTab) ? 'flex' : 'none';
+  document.getElementById('export-area').classList.remove('show');
+
+  if (currentTab==='tree') { tree.style.display='block'; renderTreeView(); }
+  else if (currentTab==='filters') { fp.style.display='block'; renderFilterPreview(); }
+  else if (currentTab==='seo') { seo.style.display='block'; renderSeoGuide(); }
+  else if (currentTab==='variants') { vv.style.display='block'; renderVariantsView(); }
+  else { grid.style.display='grid'; renderProducts(); }
+}
+
+// ============================================================
+// EVENT DELEGATION (fixes click bugs)
+// ============================================================
+// Tab clicks
+document.getElementById('tabs-bar').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  currentTab = tab.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  showCurrentView();
+});
+
+// Line filter clicks
+document.getElementById('view-controls').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn || !btn.dataset.line) return;
+  currentLineFilter = btn.dataset.line;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderProducts();
+});
+
+// Search
+document.getElementById('search-input').addEventListener('input', () => renderProducts());
+
+// Category sidebar clicks
+document.getElementById('category-tree').addEventListener('click', e => {
+  const item = e.target.closest('.cat-item');
+  if (!item) return;
+  const catId = item.dataset.cat;
+  currentCategoryFilter = currentCategoryFilter === catId ? null : catId;
+  // Switch to product view so filter is visible
+  if (currentCategoryFilter && !['all','unassigned','bundles'].includes(currentTab)) {
+    currentTab = 'all';
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('.tab[data-tab="all"]').classList.add('active');
+  }
+  renderAll();
+});
+
+// Category sidebar drag-drop
+document.getElementById('category-tree').addEventListener('dragover', e => {
+  const item = e.target.closest('.cat-item');
+  if (item) { e.preventDefault(); item.classList.add('active'); }
+});
+document.getElementById('category-tree').addEventListener('dragleave', e => {
+  const item = e.target.closest('.cat-item');
+  if (item && currentCategoryFilter !== item.dataset.cat) item.classList.remove('active');
+});
+document.getElementById('category-tree').addEventListener('drop', e => {
+  const item = e.target.closest('.cat-item');
+  if (!item || !draggedPid) return;
+  e.preventDefault();
+  if (currentCategoryFilter !== item.dataset.cat) item.classList.remove('active');
+  const p = PRODUCTS.find(x=>x.id===draggedPid);
+  if (p && !p.categories.includes(item.dataset.cat)) { p.categories.push(item.dataset.cat); saveState(); renderAll(); }
+});
+
+// Product grid events (delegation)
+let draggedPid = null;
+document.getElementById('product-grid').addEventListener('dragstart', e => {
+  const card = e.target.closest('.product-card');
+  if (card) { draggedPid = +card.dataset.id; card.classList.add('dragging'); e.dataTransfer.effectAllowed='copy'; }
+});
+document.getElementById('product-grid').addEventListener('dragend', e => {
+  const card = e.target.closest('.product-card');
+  if (card) { card.classList.remove('dragging'); draggedPid=null; }
+});
+document.getElementById('product-grid').addEventListener('click', e => {
+  // Remove category tag
+  const rm = e.target.closest('.remove');
+  if (rm) { const p=PRODUCTS.find(x=>x.id===+rm.dataset.pid); if(p){p.categories=p.categories.filter(c=>c!==rm.dataset.cat);saveState();renderAll();} return; }
+  // Assign popup
+  const assign = e.target.closest('[data-assign]');
+  if (assign) { openAssignPopup(+assign.dataset.assign); return; }
+});
+document.getElementById('product-grid').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-field]');
+  if (inp) { const p=PRODUCTS.find(x=>x.id===+inp.dataset.pid); if(p){p[inp.dataset.field]=inp.value;saveState();} }
+});
+document.getElementById('product-grid').addEventListener('dblclick', e => {
+  const card = e.target.closest('.product-card');
+  if (card && !e.target.closest('input')) openAssignPopup(+card.dataset.id);
+});
+
+// Drop zone
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  if (draggedPid) { const p=PRODUCTS.find(x=>x.id===draggedPid); if(p){p.categories=[];saveState();renderAll();} }
+});
+
+// Popup
+function openAssignPopup(pid) {
+  const p = PRODUCTS.find(x=>x.id===pid);
+  if (!p) return;
+  document.getElementById('popup-title').textContent = p.shopifyName;
+  let h = '';
+  for (const [k,g] of Object.entries(CATEGORIES)) {
+    h += `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);margin:10px 0 4px;padding-top:8px;border-top:1px solid var(--border)">${g.label}</div>`;
+    for (const c of g.items) {
+      const ch = p.categories.includes(c.id) ? 'checked' : '';
+      h += `<label class="cat-checkbox"><input type="checkbox" ${ch} data-pid="${pid}" data-cat="${c.id}"> ${c.name}</label>`;
+    }
+  }
+  document.getElementById('popup-categories').innerHTML = h;
+  document.getElementById('assign-popup').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePopup() {
+  document.getElementById('assign-popup').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+document.getElementById('overlay').addEventListener('click', closePopup);
+document.getElementById('popup-close').addEventListener('click', closePopup);
+document.getElementById('popup-categories').addEventListener('change', e => {
+  const cb = e.target;
+  if (cb.type !== 'checkbox') return;
+  const p = PRODUCTS.find(x=>x.id===+cb.dataset.pid);
+  if (!p) return;
+  if (cb.checked && !p.categories.includes(cb.dataset.cat)) p.categories.push(cb.dataset.cat);
+  else if (!cb.checked) p.categories = p.categories.filter(c=>c!==cb.dataset.cat);
+  saveState(); renderAll();
+});
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportJSON() {
+  const data = { exportDate:new Date().toISOString(), filterSchema:FILTER_SCHEMA, categories:CATEGORIES,
+    products: PRODUCTS.map(p=>({ id:p.id, originalName:p.name, shopifyName:p.shopifyName,
+      seoTitle:p.seoTitle, llmDescription:p.llmDesc, line:p.line, type:p.type,
+      price:p.price, priceOriginal:p.priceOld, isBundle:p.isBundle, isOutlet:p.isOutlet, isCustom:p.isCustom||false,
+      collections:p.categories, collectionNames:p.categories.map(getCatName), params:p.params }))
+  };
+  document.getElementById('export-output').value = JSON.stringify(data,null,2);
+  document.getElementById('export-area').classList.add('show');
+  navigator.clipboard.writeText(JSON.stringify(data,null,2)).catch(()=>{});
+}
+function exportCSV() {
+  let csv = 'ID,Original,Shopify Name,SEO Title,LLM Description,Line,Type,Price,Collections,Compression,Material,Colors,Sizes,Activities\n';
+  PRODUCTS.forEach(p => { const pr=p.params||{};
+    csv += [p.id,`"${p.name}"`,`"${p.shopifyName}"`,`"${p.seoTitle}"`,`"${p.llmDesc}"`,p.line,p.type,p.price,
+      `"${p.categories.map(getCatName).join('; ')}"`,`"${pr.compression_type||''}"`,`"${pr.material||''}"`,
+      `"${(pr.colors||[]).join(', ')}"`,`"${(pr.sizes||[]).join(', ')}"`,`"${(pr.activities||[]).join(', ')}"`
+    ].join(',')+'\n';
+  });
+  document.getElementById('export-output').value = csv;
+  document.getElementById('export-area').classList.add('show');
+  navigator.clipboard.writeText(csv).catch(()=>{});
+}
+function resetAll() {
+  if (!confirm('Reset all to defaults?')) return;
+  localStorage.removeItem('rb-planner-v3');
+  location.reload();
+}
+
+// ============================================================
+// VARIANT DISPLAY STRATEGY
+// ============================================================
+function renderVariantsView() {
+  const el = document.getElementById('variants-view');
+
+  // Calculate stats
+  let totalProducts = PRODUCTS.length;
+  let totalColors = 0;
+  let maxColors = 0;
+  let maxProduct = '';
+  PRODUCTS.forEach(p => {
+    const nc = p.params?.colors?.length || 0;
+    totalColors += nc;
+    if (nc > maxColors) { maxColors = nc; maxProduct = p.shopifyName; }
+  });
+
+  el.innerHTML = `
+  <div class="info-panel" style="border-color:var(--accent)">
+    <h3 style="color:var(--accent)">Variant Display Strategy — Jak zobrazit farebne varianty na kategorii</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+      Royal Bay ma <b>${totalProducts} produktov</b> s celkovo <b>${totalColors} farebnymi variantami</b>.
+      Produkt s najviac variantami: <b>${maxProduct}</b> (${maxColors} farieb).
+    </p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-bottom:20px">
+      <div style="background:var(--surface2);border:2px solid var(--green);border-radius:8px;padding:14px">
+        <h4 style="color:var(--green);margin-bottom:6px">DOPORUCENIE: Master + Color Swatches</h4>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+          <b>1 karta = 1 produkt</b>, farebne varianty ako male bodky/swatche pod obrazkom.<br><br>
+          <b>Preco toto:</b>
+          <ul style="margin-top:4px">
+            <li>28 produktov = prehladna kategoria</li>
+            <li>Zakaznik vidi vsetky farby na prvsi pohlad</li>
+            <li>Shopify nativne podporuje (variant options)</li>
+            <li>Lepsia konverzia — menej scrollovania</li>
+            <li>SEO: 1 URL na produkt = silnejsia autorita</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <h4 style="color:var(--orange);margin-bottom:6px">ALTERNATIVA: Separate Cards per Color</h4>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+          <b>Kazda farba = samostatna karta</b> (STOX Energy pristup na vacsich kolekciach).<br><br>
+          <b>Kedy pouzit:</b>
+          <ul style="margin-top:4px">
+            <li>Ked farby maju rozne vzory/designy (nie len plain color)</li>
+            <li>Pre kolekcie kde chcete vizualne zaplnit grid</li>
+            <li>${totalColors} kariet namiesto ${totalProducts} — moze byt prilis</li>
+          </ul>
+          <b style="color:var(--red)">Nevyhoda:</b> duplicitny obsah, horsie SEO, neprehladnost
+        </div>
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <h4 style="color:var(--purple);margin-bottom:6px">HYBRID: Master + Hover Preview</h4>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6">
+          <b>1 karta, ale pri hoveri sa meni hlavny obrazok</b> podla farby nad ktorou je mys.<br><br>
+          <b>Ako STOX na running page:</b>
+          <ul style="margin-top:4px">
+            <li>Thumbnaily farieb pod hlavnym obrazkom</li>
+            <li>Hover nad thumbnailom zmeni velky obrazok</li>
+            <li>Klik na thumbnail = presmerovanie na product page s predvybranou farbou</li>
+          </ul>
+          <b style="color:var(--green)">Toto je best practice pre Shopify.</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <h3>Shopify implementacia — Color Swatches na kategoriach</h3>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-top:8px">
+      <b>1. Variant option "Color"</b> — kazdy produkt ma varianty: Color + Size<br>
+      <b>2. Shopify theme</b> — vacsina themes (Dawn, Prestige, Impulse) podporuje swatche natívne<br>
+      <b>3. Na collection page:</b> zobrazit color dots pod product image<br>
+      <b>4. Na hover:</b> zmenit product image na image danej farby<br>
+      <b>5. Na klik:</b> ist na product page s ?variant=COLOR predvolbou<br><br>
+      <b>Mime Digital implementacia:</b> Povedzte im ze chcete "collection page color swatches with image swap on hover".
+      Je to standardna funkcia v premium themes alebo jednoduchy custom code.
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <h3>Preview — Kolko farieb ma kazdy produkt</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:8px;margin-top:10px">
+    ${PRODUCTS.map(p => {
+      const colors = p.params?.colors || [];
+      const colorDots = colors.map(c => `<span class="param-color"><span class="color-dot" style="background:${COLOR_MAP[c]||'#888'}"></span>${c}</span>`).join('');
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+        <span class="product-line ${getLineClass(p.line)}" style="font-size:10px;min-width:70px">${getLineName(p.line)}</span>
+        <span style="font-size:11px;flex:1">${p.shopifyName.split('|')[1]||p.shopifyName}</span>
+        <span style="font-size:11px;color:var(--accent);font-weight:600;min-width:20px">${colors.length}</span>
+        <span style="display:flex;flex-wrap:wrap;gap:2px">${colorDots}</span>
+      </div>`;
+    }).join('')}
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+renderAll();
+</script>
+</body>
+</html>
