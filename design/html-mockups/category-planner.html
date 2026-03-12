@@ -1300,8 +1300,58 @@ function exportMarkdown() {
   md += `## Bundles & Upsell\n\n`;
   md += `Bundly sa **nevytvaraju ako samostatne produkty**. Riesenie:\n\n`;
   md += `1. **Shopify Bundles app** (nativna, zadarmo) — kombinacie produktov so zlavou\n`;
-  md += `2. **Automatic Discounts** — "Kup 2+, usetri X%" pravidla\n`;
+  md += `2. **Automatic Discounts** — "Kup 2+, usetri X%" pravidla (Shopify Admin → Discounts → Automatic)\n`;
   md += `3. **Cross-sell blok** na product page — "Kupte spolu a usetrite"\n\n`;
+  md += `### Priklad bundle pravidiel\n\n`;
+  md += `| Pravidlo | Zlava |\n|---|---|\n`;
+  md += `| 2 pary podkolienok | -10% |\n`;
+  md += `| 3+ produkty z kolekcie | -15% |\n`;
+  md += `| Podkolenky + navleky | -12% |\n\n`;
+
+  // Related & Alternative products
+  md += `## Suvisiace & Alternativne produkty\n\n`;
+  md += `### Suvisiace produkty (Cross-sell)\n\n`;
+  md += `**Ucel:** Doplnkove produkty ineho typu, ktore zakaznik kupi navyse.\n`;
+  md += `**Shopify metafield:** \`custom.related_products\` (typ: list.product_reference)\n`;
+  md += `**UI:** Sekcia "Hodi sa k tomuto produktu" pod popisom produktu (2-3 karty s tlacidlom "Pridat do kosika").\n\n`;
+  md += `| Produkt | Suvisiace (cross-sell) |\n|---|---|\n`;
+  md += `| Podkolenky Energy | NRG ponozky, Ortho kolenni bandaz |\n`;
+  md += `| Lytkove navleky Extreme | NRG ponozky, Celenka |\n`;
+  md += `| Therapy podkolenky | Ortho kolenni/kotnickova bandaz |\n`;
+  md += `| NRG ponozky | Podkolenky Energy, Lytkove navleky Motion |\n`;
+  md += `| Merino podkolenky | Merino ponozky Super high-cut |\n`;
+  md += `| Extreme stehenni | Extreme lytkove, NRG ponozky |\n\n`;
+  md += `**Logika:** Iny typ produktu + rovnaka aktivita (podkolenky → ponozky pre bezca).\n\n`;
+
+  md += `### Alternativne produkty (Upsell)\n\n`;
+  md += `**Ucel:** Podobne produkty rovnakeho typu, ktore zakaznik zvazi namiesto.\n`;
+  md += `**Shopify metafield:** \`custom.complementary_products\` (typ: list.product_reference)\n`;
+  md += `**UI:** Sekcia "Porovnajte alternativy" — idealne s mini porovnavacou tabulkou (komprese, material, cena).\n\n`;
+  md += `| Produkt | Alternativy (upsell) |\n|---|---|\n`;
+  md += `| Energy podkolenky | Air podkolenky, Merino podkolenky |\n`;
+  md += `| Therapy | Therapy Premium, Relax |\n`;
+  md += `| Motion lytkove | Extreme lytkove, Extreme Race |\n`;
+  md += `| NRG No-show | NRG Low-cut, Air No-show |\n`;
+  md += `| NRG High-cut | NRG High-cut 2.0, Air High-cut |\n\n`;
+  md += `**Logika:** Rovnaky typ produktu + ina produktova rada (Energy podkolenky → Air podkolenky).\n\n`;
+  md += `**Shopify implementacia:** Pouzit [Search & Discovery app](https://apps.shopify.com/search-and-discovery) (zadarmo od Shopify) — nativne podporuje related aj complementary produkty. Alternativne cez metafields.\n\n`;
+
+  // Gender strategy
+  md += `## Gender stratégia (Muzi / Zeny)\n\n`;
+  md += `### Rozhodnutie: Vsetky produkty su Unisex\n\n`;
+  md += `Royal Bay produkty maju **rovnaky strih a kompresnu triedu pre muzov aj zeny**. Rozdiel je len vo farebnych preferenciach.\n\n`;
+  md += `**Preco NEriesime gender na urovni produktov:**\n`;
+  md += `- 28 produktov = prehladny katalog, delenie by zdvojnasobilo pocet zbytocne\n`;
+  md += `- Nie su rozne strihy pre M/Z (na rozdiel od STOX Energy)\n`;
+  md += `- Velkostna tabulka je jedna (S-XXL)\n`;
+  md += `- Farby hovoria za seba — zakaznik si vyberie sam\n\n`;
+  md += `### Co implementovat namiesto gender delenia\n\n`;
+  md += `| Riesenie | Detail |\n|---|---|\n`;
+  md += `| Metafield \`custom.gender\` | Hodnota "Unisex" na vsetkych produktoch. Filter sa zobrazi s 1 hodnotou — jasne ze su unisex. |\n`;
+  md += `| SEO blog clanky | "Kompresni podkolenky pro zeny — jak vybrat" s odkazmi na produkty v ruzovych farbach. Chyta longtail keywords. |\n`;
+  md += `| Homepage sekcie | "Pro nej" / "Pro neho" bloky — filtruju rovnake produkty, len zobrazuju ine farby ako hlavny obrazok. |\n`;
+  md += `| Email marketing | Segmentovane kampane podla pohlavia s relevantnymi farbami a vizualmi. |\n\n`;
+  md += `**Zaver:** Gender netreba riesit na urovni produktov ani kolekci. Staci farebne varianty + blog/homepage sekcie pre cielenu komunikaciu.\n\n`;
 
   // SEO indexing
   md += `## SEO Indexovanie\n\n`;
