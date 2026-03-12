@@ -1341,28 +1341,112 @@ function renderShopifySetup() {
     menuHtml += `</div>`;
   });
 
-  // Filters per category
-  let filtersHtml = '';
-  const typeCategories = CATEGORIES.byType.items;
-  typeCategories.forEach(cat => {
-    const data = getFiltersForCategory(cat.id);
-    if (!data) return;
-    const a = data.agg;
-    filtersHtml += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px">
-      <div style="font-size:14px;font-weight:600;margin-bottom:2px">${cat.name} <span style="color:var(--text-muted);font-weight:400">(${data.count})</span></div>
-      <div style="font-size:10px;color:var(--accent2);margin-bottom:8px">${cat.handle}</div>`;
-
-    // Show relevant filters
-    if (a.product_line.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Produktova rada <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.product_line</span></div><div>${[...a.product_line].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-    if (a.compression_type.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Typ komprese <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.compression_type</span></div><div>${[...a.compression_type].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-    if (a.colors.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Barva <span style="font-size:10px;color:var(--text-muted);font-weight:400">option.color</span></div><div>${[...a.colors].map(c=>'<span class="param-color"><span class="color-dot" style="background:'+(COLOR_MAP[c]||'#888')+'"></span>'+c+'</span>').join('')}</div></div>`;
-    if (a.sizes.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Velikost <span style="font-size:10px;color:var(--text-muted);font-weight:400">option.size</span></div><div>${[...a.sizes].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-    if (a.activities.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Aktivita <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.activity</span></div><div>${[...a.activities].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-    if (a.sock_height.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Vyska <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.sock_height</span></div><div>${[...a.sock_height].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-    if (a.features.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Vlastnosti <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.features</span></div><div>${[...a.features].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
-
-    filtersHtml += `</div>`;
+  // Category selector tabs for the e-shop preview
+  const previewCategories = CATEGORIES.byType.items.filter(c => {
+    return PRODUCTS.some(p => p.categories.includes(c.id));
   });
+
+  // Build e-shop preview for a given category
+  function buildEshopPreview(cat) {
+    const data = getFiltersForCategory(cat.id);
+    if (!data) return '';
+    const a = data.agg;
+    const ps = PRODUCTS.filter(p => p.categories.includes(cat.id));
+
+    // Filter sidebar (e-shop style)
+    let sidebar = '';
+
+    // Produktova rada
+    if (a.product_line.size > 1) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Produktova rada <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">custom.product_line</span></div>
+        ${[...a.product_line].map(v => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;cursor:pointer;color:var(--text-muted)"><input type="checkbox" style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+      </div>`;
+    }
+
+    // Typ komprese
+    if (a.compression_type.size > 0) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Typ komprese <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">custom.compression_type</span></div>
+        ${[...a.compression_type].map(v => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;cursor:pointer;color:var(--text-muted)"><input type="checkbox" style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+      </div>`;
+    }
+
+    // Barva (color swatches)
+    if (a.colors.size > 0) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Barva <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">option.color</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${[...a.colors].map(c => `<div style="cursor:pointer;text-align:center" title="${c}"><div style="width:26px;height:26px;border-radius:50%;background:${COLOR_MAP[c]||'#888'};border:2px solid var(--border);transition:border .15s"></div><div style="font-size:9px;color:var(--text-muted);margin-top:2px;max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c}</div></div>`).join('')}</div>
+      </div>`;
+    }
+
+    // Velikost
+    if (a.sizes.size > 0) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Velikost <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">option.size</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">${[...a.sizes].map(s => `<div style="padding:4px 12px;border:1px solid var(--border);border-radius:4px;font-size:12px;cursor:pointer;color:var(--text-muted);transition:all .15s">${s}</div>`).join('')}</div>
+      </div>`;
+    }
+
+    // Aktivita
+    if (a.activities.size > 1) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Aktivita <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">custom.activity</span></div>
+        ${[...a.activities].map(v => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;cursor:pointer;color:var(--text-muted)"><input type="checkbox" style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+      </div>`;
+    }
+
+    // Vyska ponozky
+    if (a.sock_height.size > 1) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Vyska <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">custom.sock_height</span></div>
+        ${[...a.sock_height].map(v => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;cursor:pointer;color:var(--text-muted)"><input type="checkbox" style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+      </div>`;
+    }
+
+    // Vlastnosti
+    if (a.features.size > 0) {
+      sidebar += `<div style="margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">Vlastnosti <span style="font-size:9px;padding:2px 5px;border-radius:3px;background:rgba(108,140,255,.1);color:var(--accent);font-weight:400">custom.features</span></div>
+        ${[...a.features].map(v => `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;cursor:pointer;color:var(--text-muted)"><input type="checkbox" style="accent-color:var(--accent)"> ${v}</label>`).join('')}
+      </div>`;
+    }
+
+    // Product cards (e-shop style)
+    let cards = '';
+    ps.forEach(p => {
+      const colors = p.params?.colors || [];
+      const colorDots = colors.slice(0,6).map(c => `<div style="width:14px;height:14px;border-radius:50%;background:${COLOR_MAP[c]||'#888'};border:1.5px solid var(--border)" title="${c}"></div>`).join('');
+      const extraColors = colors.length > 6 ? `<div style="font-size:10px;color:var(--text-muted)">+${colors.length-6}</div>` : '';
+      cards += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border .15s;cursor:pointer" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="background:var(--bg);height:140px;display:flex;align-items:center;justify-content:center;position:relative">
+          <div style="font-size:36px;opacity:.3">📷</div>
+          ${p.isOutlet ? '<div style="position:absolute;top:8px;left:8px;background:var(--red);color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px">OUTLET</div>' : ''}
+          ${p.isCustom ? '<div style="position:absolute;top:8px;left:8px;background:var(--purple);color:#fff;font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px">NA MIRU</div>' : ''}
+        </div>
+        <div style="padding:10px">
+          <div style="display:flex;gap:3px;margin-bottom:6px;align-items:center">${colorDots}${extraColors}</div>
+          <div style="font-size:12px;font-weight:500;margin-bottom:4px;line-height:1.3">${p.shopifyName.split('|')[1]?.trim() || p.shopifyName}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">${getLineName(p.line)}</div>
+          <div style="font-size:13px">
+            ${p.priceOld ? `<span style="text-decoration:line-through;color:var(--text-muted);margin-right:6px;font-size:11px">${p.priceOld} Kc</span>` : ''}
+            <span style="color:var(--green);font-weight:600">${p.price} Kc</span>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    return { sidebar, cards, count: ps.length };
+  }
+
+  // Category tabs HTML
+  let catTabsHtml = previewCategories.map((c, i) =>
+    `<div class="filter-btn shopify-cat-tab ${i===0?'active':''}" data-preview-cat="${c.id}" style="cursor:pointer">${c.name.replace('Kompresni ','')} <span style="opacity:.5;font-size:10px">${PRODUCTS.filter(p=>p.categories.includes(c.id)).length}</span></div>`
+  ).join('');
+
+  // Initial render with first category
+  const firstCat = previewCategories[0];
+  const firstPreview = buildEshopPreview(firstCat);
 
   el.innerHTML = `
   <div style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start">
@@ -1388,25 +1472,95 @@ function renderShopifySetup() {
 
       <div class="info-panel" style="margin-top:12px">
         <h3 style="margin-bottom:8px">Globalne Shopify filtre (metafields)</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Tieto filtre sa nastavia globalne v Shopify Admin → Navigation → Collection filters.</p>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Tieto filtre sa nastavia v Shopify Admin → Navigation → Collection filters.</p>
         <table style="width:100%;font-size:11px;border-collapse:collapse">
           <tr style="border-bottom:2px solid var(--border)"><td style="padding:4px 6px;font-weight:600">Filter</td><td style="padding:4px 6px;font-weight:600">Shopify key</td><td style="padding:4px 6px;font-weight:600">Typ</td></tr>
           ${FILTER_SCHEMA.map(f => `<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px 6px">${f.label}</td><td style="padding:4px 6px;color:var(--accent2)"><code>${f.shopify}</code></td><td style="padding:4px 6px;color:var(--text-muted)">${f.type}</td></tr>`).join('')}
         </table>
       </div>
+
+      <div class="info-panel" style="margin-top:12px;border-color:var(--orange)">
+        <h3 style="color:var(--orange);margin-bottom:8px">SEO indexovanie filtrov</h3>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:var(--green);font-weight:600">INDEX</span> Hlavne kategorie (typ produktu)</div>
+          <div style="font-size:11px;margin-bottom:8px;padding-left:12px">Kazda collection page ma unikatny title, H1, popis, canonical URL. Plne indexovana v Google.</div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:var(--green);font-weight:600">INDEX</span> Activity kolekcie (beh, cyklistika...)</div>
+          <div style="font-size:11px;margin-bottom:8px;padding-left:12px">SEO landing pages. Kazda ma vlastny obsah + FAQ schema. Indexovane pre longtail keywords.</div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:var(--red);font-weight:600">NOINDEX</span> Filtrovane URL (?filter.color=...)</div>
+          <div style="font-size:11px;margin-bottom:8px;padding-left:12px">Shopify filtrovane stranky su dynamicke a nemaju unikatny content. <code>&lt;meta name="robots" content="noindex"&gt;</code></div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:var(--red);font-weight:600">NOINDEX</span> Paginacia (?page=2, 3...)</div>
+          <div style="font-size:11px;margin-bottom:8px;padding-left:12px">Druha a dalsi stranky paginacie: noindex + <code>rel="next/prev"</code>. Alebo pouzit infinite scroll.</div>
+
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="color:var(--accent);font-weight:600">CANONICAL</span> Variant URL</div>
+          <div style="font-size:11px;padding-left:12px"><code>/products/energy?variant=123</code> musi mat canonical na <code>/products/energy</code>. Zabranuje duplicitnemu indexovaniu variantov.</div>
+        </div>
+      </div>
     </div>
 
     <div>
-      <div class="info-panel" style="border-color:var(--green)">
-        <h3 style="color:var(--green);margin-bottom:4px">Parametricke filtre na kategoriach</h3>
-        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
-          Ktore filtre sa zobrazia na akej kategorii — podla realne priradenyc produktov. Filtre su Shopify metafields ktore sa nastavia na kazdom produkte.
-        </p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">
-          ${filtersHtml}
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <!-- E-shop header bar -->
+        <div style="background:var(--surface2);padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:11px;color:var(--text-muted)">royalbay.cz</div>
+          <div style="display:flex;gap:12px;font-size:12px;color:var(--text-muted)">
+            <span style="cursor:pointer">Muj ucet</span>
+            <span style="cursor:pointer">Kosik (0)</span>
+          </div>
+        </div>
+
+        <!-- E-shop nav -->
+        <div style="background:var(--surface2);padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;font-size:12px">
+          <span style="color:var(--accent);font-weight:600;cursor:pointer">Podkolenky</span>
+          <span style="color:var(--text-muted);cursor:pointer">Navleky</span>
+          <span style="color:var(--text-muted);cursor:pointer">Ponozky</span>
+          <span style="color:var(--text-muted);cursor:pointer">Sortky</span>
+          <span style="color:var(--text-muted);cursor:pointer">Bandaze</span>
+          <span style="color:var(--text-muted);cursor:pointer">Pro sport ▾</span>
+          <span style="color:var(--text-muted);cursor:pointer">Zdravotni</span>
+          <span style="color:var(--text-muted);cursor:pointer">Outlet</span>
+        </div>
+
+        <!-- Breadcrumb -->
+        <div style="padding:10px 16px;font-size:11px;color:var(--text-muted)">
+          <span style="cursor:pointer">Home</span> › <span id="eshop-breadcrumb" style="color:var(--text)">${firstCat.name}</span>
+        </div>
+
+        <!-- Category title -->
+        <div style="padding:0 16px 8px">
+          <h2 id="eshop-h1" style="font-size:20px;font-weight:700;margin-bottom:2px">${firstCat.seoH1 || firstCat.name}</h2>
+          <div id="eshop-handle" style="font-size:11px;color:var(--accent2)">${firstCat.handle}</div>
+          <div id="eshop-count" style="font-size:12px;color:var(--text-muted);margin-top:4px">${firstPreview.count} produktov</div>
+        </div>
+
+        <!-- Category tabs -->
+        <div style="padding:4px 16px 10px;display:flex;gap:6px;flex-wrap:wrap" id="shopify-cat-tabs">
+          ${catTabsHtml}
+        </div>
+
+        <!-- E-shop layout: sidebar + grid -->
+        <div style="display:grid;grid-template-columns:220px 1fr;border-top:1px solid var(--border)">
+          <!-- Filter sidebar -->
+          <div id="eshop-sidebar" style="border-right:1px solid var(--border);padding:14px;overflow-y:auto;max-height:600px">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+              Filtre
+              <span style="font-size:10px;color:var(--accent);cursor:pointer;font-weight:400">Zrusit vsetky</span>
+            </div>
+            ${firstPreview.sidebar}
+          </div>
+
+          <!-- Product grid -->
+          <div id="eshop-grid" style="padding:14px;overflow-y:auto;max-height:600px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+              ${firstPreview.cards}
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- Implementation notes below the preview -->
       <div class="info-panel" style="margin-top:12px;border-color:var(--purple)">
         <h3 style="color:var(--purple);margin-bottom:8px">Implementacia pre Mime Digital</h3>
         <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
@@ -1416,23 +1570,45 @@ function renderShopifySetup() {
           <b>2. Shopify Admin → Online Store → Navigation → Collection filters:</b><br>
           &nbsp;&nbsp;Pridat filtre: Barva (option.color), Velikost (option.size) + vsetky custom.* metafields<br><br>
 
-          <b>3. Kazdy produkt musi mat vyplnene:</b><br>
-          &nbsp;&nbsp;• Variant options: Color + Size<br>
-          &nbsp;&nbsp;• Vsetky custom metafields podla tabulky<br>
-          &nbsp;&nbsp;• SEO Title + Meta Description<br>
-          &nbsp;&nbsp;• LLM Description (custom.llm_description)<br><br>
+          <b>3. Theme — Collection page sidebar:</b><br>
+          &nbsp;&nbsp;Filtre sa zobrazuju presne ako v preview hore. Kazdy filter = 1 Shopify metafield. Barvy ako swatche, velkosti ako buttony, ostatne ako checkboxy.<br><br>
 
-          <b>4. Theme customization:</b><br>
-          &nbsp;&nbsp;• Collection page: zobrazit color swatches + filtrovaci sidebar<br>
-          &nbsp;&nbsp;• Product page: color swatch selector + size guide<br>
-          &nbsp;&nbsp;• Mega-menu: podla struktury vlavo<br><br>
-
-          <b>5. Data import:</b><br>
+          <b>4. Data import:</b><br>
           &nbsp;&nbsp;Pouzit export z tohto planneru (JSON/CSV) pre hromadny import cez Shopify Matrixify alebo Stock Sync app.
         </div>
       </div>
     </div>
   </div>`;
+
+  // Wire up category tab switching
+  document.getElementById('shopify-cat-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.shopify-cat-tab');
+    if (!tab) return;
+    const catId = tab.dataset.previewCat;
+    const cat = getCat(catId);
+    if (!cat) return;
+
+    // Update active tab
+    document.querySelectorAll('.shopify-cat-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    // Rebuild preview
+    const preview = buildEshopPreview(cat);
+    document.getElementById('eshop-sidebar').innerHTML = `
+      <div style="font-size:14px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+        Filtre
+        <span style="font-size:10px;color:var(--accent);cursor:pointer;font-weight:400">Zrusit vsetky</span>
+      </div>
+      ${preview.sidebar}`;
+    document.getElementById('eshop-grid').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+        ${preview.cards}
+      </div>`;
+    document.getElementById('eshop-breadcrumb').textContent = cat.name;
+    document.getElementById('eshop-h1').textContent = cat.seoH1 || cat.name;
+    document.getElementById('eshop-handle').textContent = cat.handle;
+    document.getElementById('eshop-count').textContent = preview.count + ' produktov';
+  });
 }
 
 // ============================================================
