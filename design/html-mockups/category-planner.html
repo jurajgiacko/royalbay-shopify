@@ -183,6 +183,7 @@
       <div class="tab" data-tab="tree">Category Tree</div>
       <div class="tab" data-tab="variants">Variant Strategy</div>
       <div class="tab" data-tab="filters">Filter Preview</div>
+      <div class="tab" data-tab="shopify-setup">Shopify Setup</div>
       <div class="tab" data-tab="seo">SEO & LLM Guide</div>
     </div>
 
@@ -203,6 +204,7 @@
     <div id="tree-view" style="display:none"></div>
     <div id="filter-preview" style="display:none"></div>
     <div id="seo-guide" style="display:none"></div>
+    <div id="shopify-setup-view" style="display:none"></div>
     <div id="variants-view" style="display:none"></div>
     <div class="export-area" id="export-area">
       <h3 style="margin-bottom:8px">Export</h3>
@@ -1081,13 +1083,15 @@ function showCurrentView() {
     fp=document.getElementById('filter-preview'), seo=document.getElementById('seo-guide'),
     vc=document.getElementById('view-controls');
   const vv=document.getElementById('variants-view');
-  grid.style.display='none'; tree.style.display='none'; fp.style.display='none'; seo.style.display='none'; vv.style.display='none';
+  const ss = document.getElementById('shopify-setup-view');
+  grid.style.display='none'; tree.style.display='none'; fp.style.display='none'; seo.style.display='none'; vv.style.display='none'; ss.style.display='none';
   vc.style.display = ['all','unassigned'].includes(currentTab) ? 'flex' : 'none';
   document.getElementById('export-area').classList.remove('show');
 
   if (currentTab==='tree') { tree.style.display='block'; renderTreeView(); }
   else if (currentTab==='filters') { fp.style.display='block'; renderFilterPreview(); }
   else if (currentTab==='seo') { seo.style.display='block'; renderSeoGuide(); }
+  else if (currentTab==='shopify-setup') { ss.style.display='block'; renderShopifySetup(); }
   else if (currentTab==='variants') { vv.style.display='block'; renderVariantsView(); }
   else { grid.style.display='grid'; renderProducts(); }
 }
@@ -1250,6 +1254,185 @@ function resetAll() {
   if (!confirm('Reset all to defaults?')) return;
   localStorage.removeItem('rb-planner-v3');
   location.reload();
+}
+
+// ============================================================
+// SHOPIFY SETUP — Menu & Filters
+// ============================================================
+function renderShopifySetup() {
+  const el = document.getElementById('shopify-setup-view');
+
+  // Build filter aggregation per product-type category
+  function getFiltersForCategory(catId) {
+    const ps = PRODUCTS.filter(p => p.categories.includes(catId));
+    if (!ps.length) return null;
+    const agg = { colors: new Set(), sizes: new Set(), compression_type: new Set(), compression_class: new Set(),
+      activities: new Set(), material: new Set(), features: new Set(), sock_height: new Set(), product_line: new Set() };
+    ps.forEach(p => {
+      if (!p.params) return;
+      const pr = p.params;
+      agg.product_line.add(getLineName(p.line));
+      if (pr.compression_type) agg.compression_type.add(pr.compression_type);
+      if (pr.compression_class) agg.compression_class.add(pr.compression_class);
+      if (pr.material) agg.material.add(pr.material);
+      if (pr.sock_height) agg.sock_height.add(pr.sock_height);
+      (pr.colors||[]).forEach(c => agg.colors.add(c));
+      (pr.sizes||[]).forEach(s => agg.sizes.add(s));
+      (pr.activities||[]).forEach(a => agg.activities.add(a));
+      (pr.features||[]).forEach(f => agg.features.add(f));
+    });
+    return { count: ps.length, agg };
+  }
+
+  // Menu items with their sub-items
+  const menuStructure = [
+    { label: "Kompresni podkolenky", catId: "podkolenky", icon: "🧦", desc: "Hlavna kategoria — Energy, Air, Merino, Therapy, Relax" },
+    { label: "Kompresni navleky", icon: "🦵", desc: "Mega-menu s podkategoriami", children: [
+      { label: "Lytkove navleky", catId: "lytkove-navleky", desc: "Motion, Extreme, Extreme Race" },
+      { label: "Stehenni navleky", catId: "stehenni-navleky", desc: "Extreme" },
+      { label: "Pazni navleky", catId: "pazni-navleky", desc: "Extreme" },
+    ]},
+    { label: "Kompresni sortky", catId: "sortky", icon: "🩳", desc: "Extreme kratasy s kompresnimi nohavicemi" },
+    { label: "Sportovni ponozky", catId: "ponozky", icon: "🧦", desc: "NRG a Air ponozky — No-show, Low-cut, High-cut, Super high-cut" },
+    { label: "Sportovni bandaze", catId: "bandaze", icon: "🩹", desc: "Ortho kolenni a kotnickove navleky" },
+    { label: "Doplnky", catId: "doplnky", icon: "🎽", desc: "Celenky a dalsie prislusenstvi" },
+    { label: "---separator---" },
+    { label: "Pro sport", icon: "⚡", desc: "Cross-sell podla aktivity", children: [
+      { label: "Komprese pro beh", catId: "beh" },
+      { label: "Komprese pro cyklistiku", catId: "cyklistika" },
+      { label: "Komprese pro trail a turistiku", catId: "trail" },
+      { label: "Komprese pro fitness", catId: "fitness" },
+      { label: "Komprese pro lyzovani", catId: "lyzovani" },
+    ]},
+    { label: "Zdravotni komprese", catId: "medical", icon: "🏥", desc: "Therapy + Therapy Premium — 2. kompresni trida" },
+    { label: "Cestovni komprese", catId: "cestovani", icon: "✈️", desc: "Proti otokum v letadle a pri dlouhem sezeni" },
+    { label: "---separator---" },
+    { label: "Outlet", catId: "outlet", icon: "🏷️", desc: "Sleva az 30% na vybrane produkty" },
+    { label: "Na miru", catId: "na-miru", icon: "✂️", desc: "Vlastni logo a rozmery pro tymy" },
+  ];
+
+  let menuHtml = '';
+  menuStructure.forEach(item => {
+    if (item.label === '---separator---') {
+      menuHtml += '<div style="border-top:1px solid var(--border);margin:8px 0"></div>';
+      return;
+    }
+    const count = item.catId ? (PRODUCTS.filter(p => p.categories.includes(item.catId)).length) : '';
+    menuHtml += `<div style="padding:8px 12px;border-radius:6px;background:var(--surface2);margin-bottom:4px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:14px;font-weight:500">${item.icon||'📁'} ${item.label}</span>
+        ${count ? `<span style="font-size:11px;background:var(--accent);color:#fff;padding:1px 8px;border-radius:10px">${count}</span>` : ''}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${item.desc||''}</div>`;
+    if (item.children) {
+      item.children.forEach(ch => {
+        const cCount = ch.catId ? PRODUCTS.filter(p => p.categories.includes(ch.catId)).length : '';
+        const cat = getCat(ch.catId);
+        menuHtml += `<div style="padding:5px 12px 5px 28px;font-size:13px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin-top:4px">
+          <span>${ch.label} ${cat ? '<span style="font-size:10px;color:var(--accent2)">' + cat.handle + '</span>' : ''}</span>
+          ${cCount ? `<span style="font-size:11px;color:var(--text-muted)">${cCount}</span>` : ''}
+        </div>`;
+      });
+    }
+    if (item.catId) {
+      const cat = getCat(item.catId);
+      if (cat) menuHtml += `<div style="font-size:10px;color:var(--accent2);margin-top:4px">${cat.handle}</div>`;
+    }
+    menuHtml += `</div>`;
+  });
+
+  // Filters per category
+  let filtersHtml = '';
+  const typeCategories = CATEGORIES.byType.items;
+  typeCategories.forEach(cat => {
+    const data = getFiltersForCategory(cat.id);
+    if (!data) return;
+    const a = data.agg;
+    filtersHtml += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px">${cat.name} <span style="color:var(--text-muted);font-weight:400">(${data.count})</span></div>
+      <div style="font-size:10px;color:var(--accent2);margin-bottom:8px">${cat.handle}</div>`;
+
+    // Show relevant filters
+    if (a.product_line.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Produktova rada <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.product_line</span></div><div>${[...a.product_line].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+    if (a.compression_type.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Typ komprese <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.compression_type</span></div><div>${[...a.compression_type].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+    if (a.colors.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Barva <span style="font-size:10px;color:var(--text-muted);font-weight:400">option.color</span></div><div>${[...a.colors].map(c=>'<span class="param-color"><span class="color-dot" style="background:'+(COLOR_MAP[c]||'#888')+'"></span>'+c+'</span>').join('')}</div></div>`;
+    if (a.sizes.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Velikost <span style="font-size:10px;color:var(--text-muted);font-weight:400">option.size</span></div><div>${[...a.sizes].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+    if (a.activities.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Aktivita <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.activity</span></div><div>${[...a.activities].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+    if (a.sock_height.size > 1) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Vyska <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.sock_height</span></div><div>${[...a.sock_height].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+    if (a.features.size > 0) filtersHtml += `<div style="margin-bottom:6px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">Vlastnosti <span style="font-size:10px;color:var(--text-muted);font-weight:400">custom.features</span></div><div>${[...a.features].map(v=>'<span class="fv">'+v+'</span>').join('')}</div></div>`;
+
+    filtersHtml += `</div>`;
+  });
+
+  el.innerHTML = `
+  <div style="display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start">
+    <div>
+      <div class="info-panel" style="border-color:var(--accent)">
+        <h3 style="color:var(--accent);margin-bottom:12px">Hlavne menu — Navigacia</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+          Struktura hlavneho menu e-shopu. Primarna navigacia podla <b>typu produktu</b>, sekundarna podla <b>aktivity/pouzitia</b>.
+        </p>
+        ${menuHtml}
+      </div>
+
+      <div class="info-panel" style="margin-top:12px">
+        <h3 style="margin-bottom:8px">Shopify kolekcie — typy</h3>
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <tr style="border-bottom:2px solid var(--border)"><td style="padding:6px;font-weight:600">Typ</td><td style="padding:6px;font-weight:600">Ucel</td><td style="padding:6px;font-weight:600">V menu?</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><span class="param-tag" style="background:rgba(108,140,255,.15);color:var(--accent)">Podla typu</span></td><td style="padding:6px;color:var(--text-muted)">Primarna navigacia</td><td style="padding:6px;color:var(--green)">Ano — top level</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><span class="param-tag" style="background:rgba(78,205,196,.15);color:var(--accent2)">Podla aktivity</span></td><td style="padding:6px;color:var(--text-muted)">Cross-sell, SEO landing pages</td><td style="padding:6px;color:var(--green)">Ano — sub-menu</td></tr>
+          <tr style="border-bottom:1px solid var(--border)"><td style="padding:6px"><span class="param-tag" style="background:rgba(167,139,250,.15);color:var(--purple)">Podla pouzitia</span></td><td style="padding:6px;color:var(--text-muted)">SEO landing, zdravotni segment</td><td style="padding:6px;color:var(--orange)">Ciastocne</td></tr>
+          <tr><td style="padding:6px"><span class="param-tag" style="background:rgba(251,191,36,.15);color:var(--yellow)">Specialni</span></td><td style="padding:6px;color:var(--text-muted)">Outlet, custom objednavky</td><td style="padding:6px;color:var(--green)">Ano</td></tr>
+        </table>
+      </div>
+
+      <div class="info-panel" style="margin-top:12px">
+        <h3 style="margin-bottom:8px">Globalne Shopify filtre (metafields)</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Tieto filtre sa nastavia globalne v Shopify Admin → Navigation → Collection filters.</p>
+        <table style="width:100%;font-size:11px;border-collapse:collapse">
+          <tr style="border-bottom:2px solid var(--border)"><td style="padding:4px 6px;font-weight:600">Filter</td><td style="padding:4px 6px;font-weight:600">Shopify key</td><td style="padding:4px 6px;font-weight:600">Typ</td></tr>
+          ${FILTER_SCHEMA.map(f => `<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px 6px">${f.label}</td><td style="padding:4px 6px;color:var(--accent2)"><code>${f.shopify}</code></td><td style="padding:4px 6px;color:var(--text-muted)">${f.type}</td></tr>`).join('')}
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="info-panel" style="border-color:var(--green)">
+        <h3 style="color:var(--green);margin-bottom:4px">Parametricke filtre na kategoriach</h3>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+          Ktore filtre sa zobrazia na akej kategorii — podla realne priradenyc produktov. Filtre su Shopify metafields ktore sa nastavia na kazdom produkte.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px">
+          ${filtersHtml}
+        </div>
+      </div>
+
+      <div class="info-panel" style="margin-top:12px;border-color:var(--purple)">
+        <h3 style="color:var(--purple);margin-bottom:8px">Implementacia pre Mime Digital</h3>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.8">
+          <b>1. Shopify Admin → Settings → Custom data → Products:</b><br>
+          &nbsp;&nbsp;Vytvorit metafields: <code>custom.compression_type</code>, <code>custom.compression_class</code>, <code>custom.activity</code>, <code>custom.use_case</code>, <code>custom.material</code>, <code>custom.features</code>, <code>custom.sock_height</code>, <code>custom.product_line</code>, <code>custom.llm_description</code><br><br>
+
+          <b>2. Shopify Admin → Online Store → Navigation → Collection filters:</b><br>
+          &nbsp;&nbsp;Pridat filtre: Barva (option.color), Velikost (option.size) + vsetky custom.* metafields<br><br>
+
+          <b>3. Kazdy produkt musi mat vyplnene:</b><br>
+          &nbsp;&nbsp;• Variant options: Color + Size<br>
+          &nbsp;&nbsp;• Vsetky custom metafields podla tabulky<br>
+          &nbsp;&nbsp;• SEO Title + Meta Description<br>
+          &nbsp;&nbsp;• LLM Description (custom.llm_description)<br><br>
+
+          <b>4. Theme customization:</b><br>
+          &nbsp;&nbsp;• Collection page: zobrazit color swatches + filtrovaci sidebar<br>
+          &nbsp;&nbsp;• Product page: color swatch selector + size guide<br>
+          &nbsp;&nbsp;• Mega-menu: podla struktury vlavo<br><br>
+
+          <b>5. Data import:</b><br>
+          &nbsp;&nbsp;Pouzit export z tohto planneru (JSON/CSV) pre hromadny import cez Shopify Matrixify alebo Stock Sync app.
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ============================================================
